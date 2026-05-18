@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -9,12 +9,18 @@ export function ReviewsProvider({ children }) {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchReviews = async () => {
+    const fetchReviews = useCallback(async () => {
+        if (!user) {
+            setReviews([]);
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
             const { data, error } = await supabase
                 .from('reviews')
                 .select('*, profiles:user_id(username, avatar_url, full_name)')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -42,12 +48,17 @@ export function ReviewsProvider({ children }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.id]);
 
-    // Fetch on mount
+    // Fetch reviews whenever the logged-in user changes
     useEffect(() => {
-        fetchReviews();
-    }, []);
+        if (user?.id) {
+            fetchReviews();
+        } else {
+            setReviews([]);
+            setLoading(false);
+        }
+    }, [user?.id, fetchReviews]);
 
     const addReview = async (newReview) => {
         if (!user) throw new Error("Must be logged in to post.");

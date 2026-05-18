@@ -202,19 +202,21 @@ export default function ProfileScreen() {
 
                         {/* Action buttons removed - Edit is now in the top right header */}
                         
-                        {/* Tab Icons (Grid vs List) */}
-                        <View className="flex-row justify-center mt-2 bg-gray-50 mx-6 rounded-xl p-1">
+                        {/* View Mode Toggle (Differentiated from IG) */}
+                        <View className="flex-row justify-center mt-3 bg-gray-200 mx-5 rounded-xl p-1 mb-2">
                             <TouchableOpacity
-                                className={`flex-1 items-center py-2 rounded-lg ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
                                 onPress={() => setViewMode('grid')}
                             >
-                                <Ionicons name="grid" size={20} color={viewMode === 'grid' ? 'black' : '#9CA3AF'} />
+                                <Ionicons name="apps-outline" size={16} color={viewMode === 'grid' ? 'black' : '#6B7280'} style={{ marginRight: 6 }} />
+                                <Text className={`font-semibold text-sm ${viewMode === 'grid' ? 'text-black' : 'text-gray-500'}`}>Gallery</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                className={`flex-1 items-center py-2 rounded-lg ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
                                 onPress={() => setViewMode('list')}
                             >
-                                <Ionicons name="list" size={22} color={viewMode === 'list' ? 'black' : '#9CA3AF'} />
+                                <Ionicons name="reader-outline" size={16} color={viewMode === 'list' ? 'black' : '#6B7280'} style={{ marginRight: 6 }} />
+                                <Text className={`font-semibold text-sm ${viewMode === 'list' ? 'text-black' : 'text-gray-500'}`}>Reviews</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

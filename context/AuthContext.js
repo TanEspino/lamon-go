@@ -69,11 +69,19 @@ export const AuthProvider = ({ children }) => {
         if (loading) return;
 
         const inAuthGroup = segments[0] === '(auth)';
+        const inOnboarding = segments[0] === 'onboarding';
 
         if (!user && !inAuthGroup) {
+            // Not logged in -> go to sign in
             router.replace('/(auth)/sign-in');
-        } else if (user && inAuthGroup) {
-            if (profile) {
+        } else if (user) {
+            // Determine if the user is fresh without a username setup
+            const isFreshUser = profile && !profile.username;
+            
+            if (isFreshUser && !inOnboarding) {
+                router.replace('/onboarding');
+            } else if (!isFreshUser && inAuthGroup) {
+                // Logged in and setup complete -> go to tabs (from sign-in)
                 router.replace('/(tabs)');
             }
         } 
