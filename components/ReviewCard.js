@@ -41,29 +41,11 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
             {/* Hero Image - Polaroid Style */}
             <View className="px-4">
                 <View className="rounded-3xl overflow-hidden bg-gray-100 shadow-sm relative w-full aspect-[4/5]">
-                    <ScrollView
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
+                    <Image
+                        source={{ uri: review.photo_url || 'https://placehold.co/600x800/png?text=Food' }}
                         className="w-full h-full"
-                    >
-                        {(review.photos && review.photos.length > 0 ? review.photos : [review.photo_url]).map((photo, index) => (
-                            <Image
-                                key={index}
-                                source={{ uri: photo || 'https://placehold.co/600x800/png?text=Food' }}
-                                className="w-screen aspect-[4/5]"
-                                style={{ width: require('react-native').Dimensions.get('window').width - 32 }}
-                                resizeMode="cover"
-                            />
-                        ))}
-                    </ScrollView>
-
-                    {/* Multi-photo Indicator */}
-                    {review.photos && review.photos.length > 1 && (
-                        <View className="absolute top-3 right-3 bg-black/40 px-2 py-1 rounded-full">
-                            <Ionicons name="images" size={14} color="white" />
-                        </View>
-                    )}
+                        resizeMode="cover"
+                    />
 
                     {/* High-Contrast Overlays */}
                     <View className="absolute bottom-3 left-3 bg-gray-900 px-3 py-1.5 rounded-full flex-row items-center shadow-md">

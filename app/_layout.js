@@ -52,18 +52,31 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <ReviewsProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="restaurant/[id]" options={{ presentation: 'card', headerShown: false }} />
-          </Stack>
-        </ReviewsProvider>
-      </AuthProvider>
+    <ThemeProvider value={DefaultTheme}>
+      <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+        <View style={{ 
+          flex: 1, 
+          width: '100%', 
+          maxWidth: 600, 
+          alignSelf: 'center', 
+          backgroundColor: 'white',
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderColor: '#E5E7EB' // Soft gray boundary
+        }}>
+          <AuthProvider>
+            <ReviewsProvider>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="restaurant/[id]" options={{ presentation: 'card', headerShown: false }} />
+              </Stack>
+            </ReviewsProvider>
+          </AuthProvider>
+        </View>
+      </View>
       <StatusBar style="auto" />
     </ThemeProvider>
   );

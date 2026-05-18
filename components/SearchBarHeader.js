@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useReviews } from '../context/ReviewsContext';
@@ -18,9 +18,17 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
         : activeList.filter(item => item.toLowerCase().includes(searchQuery.trim().toLowerCase()));
 
     return (
-        <View className="bg-white px-4 py-2 border-b border-gray-100 z-50">
+        <View className="bg-gray-100 px-4 py-2 border-b border-gray-200 z-50">
+            {/* Custom Logo Header */}
+            <View className="items-center justify-center pb-3">
+                <Image
+                    source={require('../assets/logo_profile.png')}
+                    style={{ width: 150, height: 45 }}
+                    resizeMode="contain"
+                />
+            </View>
             {/* Search Type Toggle */}
-            <View className="flex-row mb-3 bg-gray-100 p-1 rounded-xl">
+            <View className="flex-row mb-3 bg-gray-200 p-1 rounded-xl">
                 <TouchableOpacity
                     onPress={() => setSearchType('dish')}
                     className={`flex-1 py-1.5 rounded-lg items-center ${searchType === 'dish' ? 'bg-white' : ''}`}
@@ -37,7 +45,7 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
 
             {/* Search Bar Container */}
             <View className="z-50 relative mb-4">
-                <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
+                <View className="flex-row items-center bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-2">
                     <Ionicons name="search" size={20} color="#9CA3AF" />
                     <TextInput
                         value={searchQuery}

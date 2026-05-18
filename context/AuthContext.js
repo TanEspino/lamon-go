@@ -1,28 +1,20 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../lib/supabase';
-// import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 
 const AuthContext = createContext({});
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState({ id: 'mock-user-id', email: 'mock@lamongo.com' });
-    const [session, setSession] = useState({ user: { id: 'mock-user-id' } });
-    const [profile, setProfile] = useState({
-        id: 'mock-user-id',
-        username: 'mock_foodie',
-        full_name: 'Mock User',
-        avatar_url: 'https://placehold.co/150x150/png?text=Mock',
-        bio: 'Just testing the app!',
-        website: ''
-    });
-    const [loading, setLoading] = useState(false);
-    // const router = useRouter();
-    // const segments = useSegments();
+    const [user, setUser] = useState(null);
+    const [session, setSession] = useState(null);
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const segments = useSegments();
 
-    // MOCK MODE: Session fetching disabled for now
-    /*
+    // Listen for Auth State Changes
     useEffect(() => {
         const fetchSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -49,24 +41,29 @@ export const AuthProvider = ({ children }) => {
 
         return () => subscription.unsubscribe();
     }, []);
-    */
 
     const fetchProfile = async (userId) => {
-        // Mock fetch - do nothing or update state if needed
-        console.log("Mock fetchProfile called for:", userId);
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching profile:', error);
+        } else {
+            setProfile(data);
+        }
     };
 
     const signOut = async () => {
-        // await supabase.auth.signOut();
-        Alert.alert("Mock Mode", "You are in mock mode. Cannot sign out.");
+        await supabase.auth.signOut();
     };
 
     const updateProfileLocal = (updates) => {
         setProfile(prev => ({...prev, ...updates}));
     };
 
-    // MOCK MODE: Route protection disabled
-    /*
     // Protected Route Logic
     useEffect(() => {
         if (loading) return;
@@ -76,15 +73,11 @@ export const AuthProvider = ({ children }) => {
         if (!user && !inAuthGroup) {
             router.replace('/(auth)/sign-in');
         } else if (user && inAuthGroup) {
-            if (profile && profile.username) {
+            if (profile) {
                 router.replace('/(tabs)');
-            } else {
-                router.replace('/(auth)/setup-profile');
             }
         } 
-        // ...
     }, [user, loading, segments, profile]);
-    */
 
     return (
         <AuthContext.Provider value={{ user, session, profile, loading, signOut, fetchProfile, updateProfileLocal }}>

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, Platform, useWindowDimensions } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useReviews } from '../../context/ReviewsContext';
 import ReviewCard from '../../components/ReviewCard';
@@ -38,9 +38,10 @@ export default function ProfileScreen() {
         }
     }, [viewMode, targetIndex]);
 
-    // Calculate grid item size
-    const screenWidth = Dimensions.get('window').width;
-    const itemSize = screenWidth / 3;
+    // Calculate grid item size (accounting for the 600px max-width on Web)
+    const { width } = useWindowDimensions();
+    const containerWidth = Math.min(width, 600);
+    const itemSize = containerWidth / 3;
 
     const renderGridItem = ({ item, index }) => (
         <TouchableOpacity
@@ -66,14 +67,21 @@ export default function ProfileScreen() {
     );
 
     const handleDelete = (id) => {
-        Alert.alert(
-            "Delete Post",
-            "Are you sure you want to delete this post?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => deleteReview(id) }
-            ]
-        );
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm("Are you sure you want to delete this post?");
+            if (confirmed) {
+                deleteReview(id);
+            }
+        } else {
+            Alert.alert(
+                "Delete Post",
+                "Are you sure you want to delete this post?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Delete", style: "destructive", onPress: () => deleteReview(id) }
+                ]
+            );
+        }
     };
 
     const renderListItem = ({ item }) => (
@@ -112,45 +120,84 @@ export default function ProfileScreen() {
                 ref={flatListRef}
                 key={viewMode} // Force re-render when changing columns
                 ListHeaderComponent={() => (
-                    <View className="bg-white pb-4">
+                    <View className="bg-gray-100 pb-4">
                         {/* Top Section: Dashboard Header */}
-                        <View className="bg-white pt-2 pb-4 border-b border-gray-100 mb-1">
-                            {/* Top Right Actions */}
-                            <View className="flex-row justify-end px-5 pt-2">
-                                <TouchableOpacity onPress={() => router.push('/onboarding')}>
-                                    <Ionicons name="settings-outline" size={24} color="black" />
+                        <View className="bg-gray-100 pb-4 pt-2 px-5 border-b border-gray-200">
+                            {/* Top Header Bar: Logo & Actions */}
+                            <View className="flex-row justify-between items-center mb-4 mt-2">
+                                <View style={{ width: 26 }} /> {/* Spacer to precisely center logo */}
+                                <Image
+                                    source={require('../../assets/logo_profile.png')}
+                                    style={{ width: 150, height: 45 }}
+                                    resizeMode="contain"
+                                />
+                                <TouchableOpacity onPress={signOut}>
+                                    <Ionicons name="log-out-outline" size={26} color="black" />
                                 </TouchableOpacity>
                             </View>
 
-                            <View className="items-center px-4">
-                                <View className="p-1 rounded-full border-[2.5px] border-turquoise">
-                                    <Image
-                                        source={{ uri: profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
-                                        className="w-24 h-24 rounded-full bg-gray-100"
-                                    />
+                            {/* Centered Identity Row (Avatar + Bio) */}
+                            <View className="flex-row items-center justify-center mb-4 mt-2 px-4">
+                                {/* Avatar */}
+                                <View className="mr-5">
+                                    <View className="p-1 rounded-full border-[2px] border-turquoise">
+                                        <Image
+                                            source={{ uri: profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
+                                            className="w-20 h-20 rounded-full bg-gray-100"
+                                        />
+                                    </View>
                                 </View>
-                                
-                                <Text className="font-bold text-2xl text-gray-900 mt-4">{profile.username}</Text>
-                                {profile.bio ? <Text className="text-gray-600 text-center text-sm mt-1 px-8 leading-5">{profile.bio}</Text> : null}
+
+                                {/* Username & Bio */}
+                                <View className="flex-col justify-center flex-shrink items-start" style={{ maxWidth: 200 }}>
+                                    <View className="flex-row items-center mb-1">
+                                        <Text className="font-extrabold text-xl text-gray-900 tracking-tight" numberOfLines={1}>
+                                            @{profile.username}
+                                        </Text>
+                                    </View>
+                                    {profile.bio ? (
+                                        <View className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+                                            <Text className="text-gray-600 text-xs font-medium leading-tight italic" numberOfLines={3}>
+                                                {profile.bio}
+                                            </Text>
+                                        </View>
+                                    ) : null}
+                                </View>
                             </View>
 
-                            {/* Analytics Cards */}
-                            <View className="flex-row justify-between px-6 mt-6">
-                                <View className="bg-white py-3 px-2 rounded-2xl flex-1 mr-2 shadow-sm items-center border border-gray-100">
-                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Reviews</Text>
-                                    <Text className="text-xl font-bold text-primary">{totalReviews}</Text>
+                            {/* Stats Row */}
+                            <View className="flex-row justify-between items-center mb-4 px-2">
+                                {/* Reviews Widget */}
+                                <View className="bg-white py-2 px-1 rounded-xl flex-1 mr-2 items-center justify-center border border-gray-200 shadow-sm">
+                                    <Ionicons name="document-text-outline" size={16} color="#4B5563" style={{ marginBottom: 2 }} />
+                                    <Text className="text-lg font-bold text-gray-900 leading-tight">{totalReviews}</Text>
+                                    <Text className="text-gray-500 text-[9px] font-bold uppercase tracking-wider">Reviews</Text>
                                 </View>
-                                <View className="bg-white py-3 px-2 rounded-2xl flex-1 mx-1 shadow-sm items-center border border-gray-100">
-                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1 flex-row items-center">
-                                        <Ionicons name="star" size={10} color="black" /> 5 STARS
-                                    </Text>
-                                    <Text className="text-xl font-bold text-gray-900">{fiveStarCount}</Text>
+                                
+                                {/* 5 Stars Widget */}
+                                <View className="bg-white py-2 px-1 rounded-xl flex-1 mx-1 items-center justify-center border border-gray-200 shadow-sm">
+                                    <Ionicons name="star" size={16} color="#14B8A6" style={{ marginBottom: 2 }} />
+                                    <Text className="text-lg font-bold text-gray-900 leading-tight">{fiveStarCount}</Text>
+                                    <Text className="text-gray-500 text-[9px] font-bold uppercase tracking-wider">5 Stars</Text>
                                 </View>
-                                <View className="bg-white py-3 px-2 rounded-2xl flex-1 ml-2 shadow-sm items-center border border-gray-100">
-                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Places</Text>
-                                    <Text className="text-xl font-bold text-gray-900">{uniquePlaces}</Text>
+                                
+                                {/* Places Widget */}
+                                <View className="bg-white py-2 px-1 rounded-xl flex-1 ml-2 items-center justify-center border border-gray-200 shadow-sm">
+                                    <Ionicons name="map-outline" size={16} color="#4B5563" style={{ marginBottom: 2 }} />
+                                    <Text className="text-lg font-bold text-gray-900 leading-tight">{uniquePlaces}</Text>
+                                    <Text className="text-gray-500 text-[9px] font-bold uppercase tracking-wider">Places</Text>
                                 </View>
                             </View>
+
+                            {/* Edit Profile Action Button */}
+                            <TouchableOpacity 
+                                onPress={() => router.push('/onboarding')}
+                                className="bg-white py-2.5 rounded-xl border border-gray-200 items-center justify-center flex-row shadow-sm self-center"
+                                style={{ width: '95%' }}
+                                activeOpacity={0.8}
+                            >
+                                <Text className="font-bold text-gray-900 text-sm">Edit Profile</Text>
+                            </TouchableOpacity>
                         </View>
 
                         {/* Action buttons removed - Edit is now in the top right header */}

@@ -5,13 +5,16 @@ import { useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 export default function OnboardingScreen() {
-    const { updateProfileLocal, profile } = useAuth();
+    const { updateProfileLocal, profile, user, fetchProfile } = useAuth();
     const router = useRouter();
     const [username, setUsername] = useState(profile?.username || '');
     const [bio, setBio] = useState(profile?.bio || '');
     const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -32,13 +35,74 @@ export default function OnboardingScreen() {
             return;
         }
 
+        const usernameRegex = /^[a-zA-Z0-9._]+$/;
+        if (!usernameRegex.test(username)) {
+            Alert.alert("Invalid Username", "Username can only contain letters, numbers, periods, and underscores. No spaces allowed.");
+            return;
+        }
+
+        if (!user) {
+            Alert.alert("Error", "You must be logged in to save a profile.");
+            return;
+        }
+
+        setIsSaving(true);
+
         try {
-            // Update the auth context so it reflects immediately on the profile page
-            updateProfileLocal({
-                username,
-                bio,
-                avatar_url: avatarUrl || 'https://placehold.co/150x150/png?text=User',
-            });
+            let finalAvatarUrl = avatarUrl;
+
+            // 1. If the user selected a new local image, compress and upload it!
+            if (avatarUrl && !avatarUrl.startsWith('http')) {
+                // FORCE COMPRESSION
+                const manipulatedImage = await ImageManipulator.manipulateAsync(
+                    avatarUrl,
+                    [{ resize: { width: 500 } }], // Shrink to 500px for avatars
+                    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+                );
+
+                const response = await fetch(manipulatedImage.uri);
+                const blob = await response.blob();
+                const fileExt = 'jpg';
+                const fileName = `avatar_${user.id}_${Date.now()}.${fileExt}`;
+                
+                // Upload to Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('review-images')
+                    .upload(fileName, blob, { contentType: `image/${fileExt}` });
+                    
+                if (uploadError) throw uploadError;
+                
+                // Get Public URL
+                const { data: publicData } = supabase.storage
+                    .from('review-images')
+                    .getPublicUrl(uploadData.path);
+                    
+                finalAvatarUrl = publicData.publicUrl;
+
+                // 2. GARBAGE COLLECTION: Delete the old custom avatar if it existed in our bucket!
+                if (profile?.avatar_url && profile.avatar_url.includes('review-images')) {
+                    const oldFileName = profile.avatar_url.split('/').pop();
+                    if (oldFileName) {
+                        // Fire and forget, don't crash if it fails
+                        supabase.storage.from('review-images').remove([oldFileName]).catch(e => console.log(e));
+                    }
+                }
+            }
+
+            // 3. Update Database `profiles` table
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                    username,
+                    bio,
+                    avatar_url: finalAvatarUrl || 'https://placehold.co/150x150/png?text=User'
+                })
+                .eq('id', user.id);
+
+            if (updateError) throw updateError;
+
+            // 4. Force Global Context Sync
+            await fetchProfile(user.id);
 
             // Mark onboarding as completed in local storage
             await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
@@ -51,7 +115,9 @@ export default function OnboardingScreen() {
             }
         } catch (error) {
             console.error("Onboarding Error:", error);
-            Alert.alert('Error', "Failed to complete setup. Please try again.");
+            Alert.alert('Error', error.message || "Failed to save profile.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -67,8 +133,10 @@ export default function OnboardingScreen() {
                     <View className="w-10" />
                 )}
                 <Text className="text-base font-bold text-black">{router.canGoBack() ? 'Edit Profile' : 'Profile Setup'}</Text>
-                <Pressable onPress={handleSave}>
-                    <Text className="text-primary font-bold text-base">Complete</Text>
+                <Pressable onPress={handleSave} disabled={isSaving}>
+                    <Text className={`font-bold text-base ${isSaving ? 'text-gray-400' : 'text-primary'}`}>
+                        {isSaving ? 'Saving...' : 'Complete'}
+                    </Text>
                 </Pressable>
             </View>
 
@@ -96,33 +164,41 @@ export default function OnboardingScreen() {
                     {/* Form Fields - Instagram Style List */}
                     <View className="px-4 py-2">
                         {/* Username */}
-                        <View className="flex-row items-center py-4 border-b border-gray-100">
-                            <View className="w-8 items-center mr-3">
-                                <Ionicons name="person-outline" size={24} color="#262626" />
+                        <View className="py-2 border-b border-gray-100">
+                            <View className="flex-row items-center">
+                                <View className="w-8 items-center mr-3">
+                                    <Ionicons name="person-outline" size={24} color="#262626" />
+                                </View>
+                                <TextInput
+                                    value={username}
+                                    onChangeText={(text) => setUsername(text.replace(/[^a-zA-Z0-9._]/g, ''))}
+                                    placeholder="Username..."
+                                    placeholderTextColor="#9CA3AF"
+                                    autoCapitalize="none"
+                                    maxLength={20}
+                                    className="flex-1 text-base text-black py-2"
+                                />
                             </View>
-                            <TextInput
-                                value={username}
-                                onChangeText={setUsername}
-                                placeholder="Username..."
-                                placeholderTextColor="#9CA3AF"
-                                autoCapitalize="none"
-                                className="flex-1 text-base text-black"
-                            />
+                            <Text className="text-right text-[10px] text-gray-400 mt-1">{username.length}/20</Text>
                         </View>
 
                         {/* Bio */}
-                        <View className="flex-row items-center py-4 border-b border-gray-100">
-                            <View className="w-8 items-center mr-3">
-                                <Ionicons name="document-text-outline" size={24} color="#262626" />
+                        <View className="py-2 border-b border-gray-100">
+                            <View className="flex-row items-center">
+                                <View className="w-8 items-center mr-3">
+                                    <Ionicons name="document-text-outline" size={24} color="#262626" />
+                                </View>
+                                <TextInput
+                                    value={bio}
+                                    onChangeText={setBio}
+                                    placeholder="Write a short bio..."
+                                    placeholderTextColor="#9CA3AF"
+                                    multiline
+                                    maxLength={80}
+                                    className="flex-1 text-base text-black py-2"
+                                />
                             </View>
-                            <TextInput
-                                value={bio}
-                                onChangeText={setBio}
-                                placeholder="Write a short bio..."
-                                placeholderTextColor="#9CA3AF"
-                                multiline
-                                className="flex-1 text-base text-black"
-                            />
+                            <Text className="text-right text-[10px] text-gray-400 mt-1">{bio.length}/80</Text>
                         </View>
                     </View>
                 </ScrollView>

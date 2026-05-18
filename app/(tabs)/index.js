@@ -17,9 +17,9 @@ export default function FeedScreen() {
     return (
         <SafeAreaView className="flex-1 bg-white">
             {/* Custom Logo Header */}
-            <View className="items-center justify-center py-3 bg-white border-b border-gray-50">
+            <View className="items-center justify-center py-3 bg-gray-100 border-b border-gray-200">
                 <Image
-                    source={require('../../assets/logo_alt.png')}
+                    source={require('../../assets/logo_profile.png')}
                     style={{ width: 150, height: 45 }}
                     resizeMode="contain"
                 />

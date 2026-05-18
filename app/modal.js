@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { supabase } from '../lib/supabase';
 import { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
 import CurrencyPicker from '../components/CurrencyPicker';
@@ -24,6 +26,7 @@ export default function ModalScreen() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Compute unique restaurant names from past reviews
     const allUniquePlaces = Array.from(new Set(reviews?.filter(r => r.restaurant_name).map(r => r.restaurant_name) || []));
@@ -59,7 +62,7 @@ export default function ModalScreen() {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
             allowsMultipleSelection: true,
-            quality: 1,
+            quality: 0.5, // 50% compression to drastically save cloud storage space
         });
 
         if (!result.canceled) {
@@ -82,7 +85,7 @@ export default function ModalScreen() {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!restaurantName.trim() || !dish.trim() || !price.trim() || rating === 0) {
             Alert.alert(
                 "Incomplete Masterpiece 🎨",
@@ -91,24 +94,71 @@ export default function ModalScreen() {
             return;
         }
 
-        const reviewData = {
-            dish_name: dish,
-            restaurant_name: restaurantName,
-            rating,
-            notes,
-            photos,
-            photo_url: photos[0] || null,
-            price: parseFloat(price) || 0,
-            currency,
-            date_ordered: dateOrdered.toISOString().split('T')[0],
-        };
+        setIsSaving(true);
+        
+        try {
+            let uploadedPhotoUrl = null;
 
-        if (isEditing) {
-            updateReview({ ...reviewData, id: params.id });
-        } else {
-            addReview(reviewData);
+            // If there's a local photo selected, upload it to Supabase Storage first
+            if (photos.length > 0 && !photos[0].startsWith('http')) {
+                let uri = photos[0];
+                
+                // FORCE COMPRESSION: Resize and compress the image to guarantee small file sizes, even on Web!
+                const manipulatedImage = await ImageManipulator.manipulateAsync(
+                    uri,
+                    [{ resize: { width: 1080 } }], // Shrink to 1080p width max
+                    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG } // High-quality compression (80%) instead of aggressive crushing
+                );
+                
+                uri = manipulatedImage.uri;
+
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                const fileExt = 'jpg';
+                const fileName = `review_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                
+                const { data, error } = await supabase.storage
+                    .from('review-images')
+                    .upload(fileName, blob, { contentType: `image/${fileExt}` });
+                    
+                if (error) {
+                    throw error;
+                }
+                
+                // Get the public URL for the uploaded file
+                const { data: publicData } = supabase.storage
+                    .from('review-images')
+                    .getPublicUrl(data.path);
+                    
+                uploadedPhotoUrl = publicData.publicUrl;
+            } else if (photos.length > 0) {
+                uploadedPhotoUrl = photos[0]; // Already a remote URL
+            }
+
+            const reviewData = {
+                dish_name: dish,
+                restaurant_name: restaurantName,
+                rating,
+                notes,
+                photos: uploadedPhotoUrl ? [uploadedPhotoUrl] : [],
+                photo_url: uploadedPhotoUrl,
+                price: parseFloat(price) || 0,
+                currency,
+                // date_ordered: dateOrdered.toISOString().split('T')[0], // Removed from DB schema for now
+            };
+
+            if (isEditing) {
+                await updateReview({ ...reviewData, id: params.id });
+            } else {
+                await addReview(reviewData);
+            }
+            router.dismiss();
+        } catch (error) {
+            console.error("Error saving review:", error);
+            Alert.alert("Error Saving Post", error.message);
+        } finally {
+            setIsSaving(false);
         }
-        router.dismiss();
     };
 
     return (
@@ -119,8 +169,10 @@ export default function ModalScreen() {
                     <Ionicons name="close-outline" size={28} color="#262626" />
                 </Pressable>
                 <Text className="text-base font-bold text-black">{isEditing ? 'Edit Post' : 'New Post'}</Text>
-                <Pressable onPress={handleSave}>
-                    <Text className="text-blue-500 font-bold text-base">Share</Text>
+                <Pressable onPress={handleSave} disabled={isSaving}>
+                    <Text className={`font-bold text-base ${isSaving ? 'text-gray-400' : 'text-blue-500'}`}>
+                        {isSaving ? 'Sharing...' : 'Share'}
+                    </Text>
                 </Pressable>
             </View>
 
@@ -129,7 +181,16 @@ export default function ModalScreen() {
                 keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
                 className="flex-1"
             >
-                <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled">
+                <ScrollView 
+                    className="flex-1" 
+                    contentContainerStyle={{ 
+                        paddingBottom: 150, 
+                        width: '100%', 
+                        maxWidth: 600, 
+                        alignSelf: 'center' 
+                    }} 
+                    keyboardShouldPersistTaps="handled"
+                >
                     {/* Key Visual / Photo Area */}
                     <View className="w-full bg-gray-50 aspect-square border-b border-gray-100 relative">
                         {photos.length > 0 ? (
