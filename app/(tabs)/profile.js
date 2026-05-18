@@ -14,9 +14,15 @@ export default function ProfileScreen() {
     // Filter reviews for current user
     const myReviews = reviews.filter(r => r.user_id === user?.id);
 
+    // Dashboard Analytics
+    const totalReviews = myReviews.length;
+    const fiveStarCount = myReviews.filter(r => r.rating === 5).length;
+    const uniquePlaces = new Set(myReviews.filter(r => r.restaurant_name).map(r => r.restaurant_name)).size;
+
     // View Mode State
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [targetIndex, setTargetIndex] = useState(null);
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const flatListRef = useRef(null);
 
     useEffect(() => {
@@ -90,9 +96,14 @@ export default function ProfileScreen() {
                     headerStyle: { backgroundColor: 'white' },
                     headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
                     headerRight: () => (
-                        <TouchableOpacity className="mr-4" onPress={signOut}>
-                            <Ionicons name="log-out-outline" size={28} color="black" />
-                        </TouchableOpacity>
+                        <View className="flex-row items-center mr-4">
+                            <TouchableOpacity className="mr-4" onPress={() => router.push('/onboarding')}>
+                                <Ionicons name="settings-outline" size={26} color="black" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={signOut}>
+                                <Ionicons name="log-out-outline" size={28} color="black" />
+                            </TouchableOpacity>
+                        </View>
                     )
                 }}
             />
@@ -102,73 +113,61 @@ export default function ProfileScreen() {
                 key={viewMode} // Force re-render when changing columns
                 ListHeaderComponent={() => (
                     <View className="bg-white pb-4">
-                        {/* Top Section: Avatar + Stats */}
-                        <View className="flex-row items-center px-4 py-2">
-                            {/* Avatar */}
-                            <View className="mr-6">
-                                <Image
-                                    source={{ uri: profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
-                                    className="w-20 h-20 rounded-full bg-gray-200 border border-gray-100"
-                                />
+                        {/* Top Section: Dashboard Header */}
+                        <View className="bg-white pt-2 pb-4 border-b border-gray-100 mb-1">
+                            {/* Top Right Actions */}
+                            <View className="flex-row justify-end px-5 pt-2">
+                                <TouchableOpacity onPress={() => router.push('/onboarding')}>
+                                    <Ionicons name="settings-outline" size={24} color="black" />
+                                </TouchableOpacity>
                             </View>
 
-                            {/* Stats */}
-                            <View className="flex-1 flex-row justify-between mr-4">
-                                <View className="items-center">
-                                    <Text className="font-bold text-lg text-gray-900">{myReviews.length}</Text>
-                                    <Text className="text-gray-900 text-xs">Posts</Text>
+                            <View className="items-center px-4">
+                                <View className="p-1 rounded-full border-[2.5px] border-turquoise">
+                                    <Image
+                                        source={{ uri: profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
+                                        className="w-24 h-24 rounded-full bg-gray-100"
+                                    />
                                 </View>
-                                <View className="items-center">
-                                    <Text className="font-bold text-lg text-gray-900">0</Text>
-                                    <Text className="text-gray-900 text-xs">Followers</Text>
+                                
+                                <Text className="font-bold text-2xl text-gray-900 mt-4">{profile.username}</Text>
+                                {profile.bio ? <Text className="text-gray-600 text-center text-sm mt-1 px-8 leading-5">{profile.bio}</Text> : null}
+                            </View>
+
+                            {/* Analytics Cards */}
+                            <View className="flex-row justify-between px-6 mt-6">
+                                <View className="bg-white py-3 px-2 rounded-2xl flex-1 mr-2 shadow-sm items-center border border-gray-100">
+                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Reviews</Text>
+                                    <Text className="text-xl font-bold text-primary">{totalReviews}</Text>
                                 </View>
-                                <View className="items-center">
-                                    <Text className="font-bold text-lg text-gray-900">0</Text>
-                                    <Text className="text-gray-900 text-xs">Following</Text>
+                                <View className="bg-white py-3 px-2 rounded-2xl flex-1 mx-1 shadow-sm items-center border border-gray-100">
+                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1 flex-row items-center">
+                                        <Ionicons name="star" size={10} color="black" /> 5 STARS
+                                    </Text>
+                                    <Text className="text-xl font-bold text-gray-900">{fiveStarCount}</Text>
+                                </View>
+                                <View className="bg-white py-3 px-2 rounded-2xl flex-1 ml-2 shadow-sm items-center border border-gray-100">
+                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Places</Text>
+                                    <Text className="text-xl font-bold text-gray-900">{uniquePlaces}</Text>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Bio Section */}
-                        <View className="px-4 mt-2">
-                            <Text className="font-bold text-gray-900 text-sm mb-1">{profile.username}</Text>
-                            {profile.bio ? <Text className="text-gray-900 text-sm mb-1">{profile.bio}</Text> : null}
-                            {profile.website ? <Text className="text-blue-900 text-sm">{profile.website}</Text> : null}
-                        </View>
-
-                        {/* Action Buttons */}
-                        <View className="flex-row px-4 mt-4 space-x-2">
-                            <TouchableOpacity 
-                                onPress={() => router.push('/onboarding')}
-                                className="flex-1 bg-gray-100 py-1.5 rounded-md items-center"
-                            >
-                                <Text className="font-semibold text-gray-900 text-sm">Edit profile</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                className="flex-1 bg-red-100 py-1.5 rounded-md items-center"
-                                onPress={async () => {
-                                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                                    await AsyncStorage.removeItem('hasCompletedOnboarding');
-                                    router.replace('/onboarding');
-                                }}
-                            >
-                                <Text className="font-semibold text-red-600 text-sm">Reset Onboarding</Text>
-                            </TouchableOpacity>
-                        </View>
-
+                        {/* Action buttons removed - Edit is now in the top right header */}
+                        
                         {/* Tab Icons (Grid vs List) */}
-                        <View className="flex-row justify-around mt-6 border-t border-gray-200 pt-2">
+                        <View className="flex-row justify-center mt-2 bg-gray-50 mx-6 rounded-xl p-1">
                             <TouchableOpacity
-                                className={`items-center w-1/2 pb-2 ${viewMode === 'grid' ? 'border-b-2 border-black' : ''}`}
+                                className={`flex-1 items-center py-2 rounded-lg ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
                                 onPress={() => setViewMode('grid')}
                             >
-                                <Ionicons name="grid" size={24} color={viewMode === 'grid' ? 'black' : '#9CA3AF'} />
+                                <Ionicons name="grid" size={20} color={viewMode === 'grid' ? 'black' : '#9CA3AF'} />
                             </TouchableOpacity>
                             <TouchableOpacity
-                                className={`items-center w-1/2 pb-2 ${viewMode === 'list' ? 'border-b-2 border-black' : ''}`}
+                                className={`flex-1 items-center py-2 rounded-lg ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
                                 onPress={() => setViewMode('list')}
                             >
-                                <Ionicons name="list" size={26} color={viewMode === 'list' ? 'black' : '#9CA3AF'} />
+                                <Ionicons name="list" size={22} color={viewMode === 'list' ? 'black' : '#9CA3AF'} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -179,6 +178,11 @@ export default function ProfileScreen() {
                 numColumns={viewMode === 'grid' ? 3 : 1}
                 contentContainerStyle={{ paddingBottom: 20 }}
                 showsVerticalScrollIndicator={false}
+                onScroll={(e) => {
+                    const offsetY = e.nativeEvent.contentOffset.y;
+                    setShowScrollTop(offsetY > 300);
+                }}
+                scrollEventThrottle={16}
                 onScrollToIndexFailed={(info) => {
                     const wait = new Promise(resolve => setTimeout(resolve, 500));
                     wait.then(() => {
@@ -186,6 +190,18 @@ export default function ProfileScreen() {
                     });
                 }}
             />
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <TouchableOpacity
+                    onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+                    className="absolute bottom-6 right-6 bg-turquoise w-12 h-12 rounded-full items-center justify-center shadow-lg"
+                    style={{ elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 }}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="arrow-up" size={24} color="white" />
+                </TouchableOpacity>
+            )}
         </SafeAreaView>
     );
 }

@@ -1,33 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useRef } from 'react';
 import { FlatList, Image, SafeAreaView, TouchableOpacity, View } from 'react-native';
+import { useScrollToTop } from '@react-navigation/native';
 import ReviewCard from '../../components/ReviewCard';
 import { useReviews } from '../../context/ReviewsContext';
 
 export default function FeedScreen() {
-    const { reviews, deleteReview } = useReviews();
+    const { reviews } = useReviews();
     const router = useRouter();
+    const flatListRef = useRef(null);
+    
+    // Automatically scroll to top when the active tab icon is tapped
+    useScrollToTop(flatListRef);
 
     return (
         <SafeAreaView className="flex-1 bg-white">
-            <Stack.Screen
-                options={{
-                    headerTitle: '', // clear title
-                    headerLeft: () => (
-                        <View style={{ marginLeft: 16, width: 120, height: 40, justifyContent: 'center' }}>
-                            <Image
-                                source={require('../../assets/images/logo.png')}
-                                style={{ width: 110, height: 35 }}
-                                resizeMode="contain"
-                            />
-                        </View>
-                    ),
-                    headerShadowVisible: false,
-                    headerStyle: { backgroundColor: 'white' },
-
-                }}
-            />
-            < FlatList
+            {/* Custom Logo Header */}
+            <View className="items-center justify-center py-3 bg-white border-b border-gray-50">
+                <Image
+                    source={require('../../assets/logo_alt.png')}
+                    style={{ width: 150, height: 45 }}
+                    resizeMode="contain"
+                />
+            </View>
+            <FlatList
+                ref={flatListRef}
                 data={reviews}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (

@@ -15,11 +15,15 @@ export default function TabLayout() {
                 headerShown: false,
                 tabBarShowLabel: false, // Instagram style: Icons only usually, but we can keep it simple
                 tabBarStyle: {
-                    borderTopWidth: 0.5,
-                    borderTopColor: '#DBDBDB',
+                    borderTopWidth: 0,
                     backgroundColor: 'white',
                     height: 60,
                     paddingTop: 10,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 10,
+                    elevation: 5,
                 },
             }}>
             <Tabs.Screen

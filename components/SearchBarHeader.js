@@ -1,9 +1,24 @@
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { useReviews } from '../context/ReviewsContext';
 
 export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFilter, setRatingFilter, searchType, setSearchType }) {
+    const { reviews } = useReviews();
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Compute unique lists
+    const allUniqueRestaurants = Array.from(new Set(reviews?.filter(r => r.restaurant_name).map(r => r.restaurant_name) || []));
+    const allUniqueDishes = Array.from(new Set(reviews?.filter(r => r.dish_name).map(r => r.dish_name) || []));
+
+    // Filter based on type
+    const activeList = searchType === 'dish' ? allUniqueDishes : allUniqueRestaurants;
+    const filteredSuggestions = searchQuery.trim() === '' 
+        ? [] 
+        : activeList.filter(item => item.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+
     return (
-        <View className="bg-white px-4 py-2 border-b border-gray-100">
+        <View className="bg-white px-4 py-2 border-b border-gray-100 z-50">
             {/* Search Type Toggle */}
             <View className="flex-row mb-3 bg-gray-100 p-1 rounded-xl">
                 <TouchableOpacity
@@ -20,21 +35,55 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
                 </TouchableOpacity>
             </View>
 
-            {/* Search Bar */}
-            <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2 mb-4">
-                <Ionicons name="search" size={20} color="#9CA3AF" />
-                <TextInput
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholder={searchType === 'dish' ? "Search for a dish..." : "Search for a restaurant..."}
-                    className="flex-1 ml-2 text-base"
-                    autoCapitalize="none"
-                    clearButtonMode="while-editing"
-                />
+            {/* Search Bar Container */}
+            <View className="z-50 relative mb-4">
+                <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
+                    <Ionicons name="search" size={20} color="#9CA3AF" />
+                    <TextInput
+                        value={searchQuery}
+                        onChangeText={(text) => {
+                            setSearchQuery(text);
+                            setShowSuggestions(true);
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        placeholder={searchType === 'dish' ? "Search for a dish..." : "Search for a restaurant..."}
+                        className="flex-1 ml-2 text-base"
+                        autoCapitalize="none"
+                        clearButtonMode="while-editing"
+                        style={{ minHeight: 32, paddingVertical: 0 }}
+                    />
+                </View>
+
+                {/* Autocomplete Suggestions */}
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                    <View 
+                        className="bg-gray-50 border border-gray-300 rounded-lg absolute left-0 right-0 z-50 overflow-hidden"
+                        style={{ top: 45, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 }}
+                    >
+                        <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 150 }}>
+                            {filteredSuggestions.map((item, index) => (
+                                <Pressable 
+                                    key={index} 
+                                    className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredSuggestions.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                    onPress={() => {
+                                        setSearchQuery(item);
+                                        setShowSuggestions(false);
+                                    }}
+                                >
+                                    <View className="mr-3">
+                                        <Ionicons name={searchType === 'dish' ? "fast-food-outline" : "search-outline"} size={18} color="#6B7280" />
+                                    </View>
+                                    <Text className="text-base text-gray-800 font-medium flex-1" numberOfLines={1}>{item}</Text>
+                                </Pressable>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
             </View>
 
             {/* Rating Filter Chips */}
-            <View className="flex-row justify-between mb-2">
+            <View className="flex-row justify-between mb-2 z-10">
                 <TouchableOpacity
                     onPress={() => setRatingFilter(null)}
                     className={`px-4 py-1.5 rounded-full border ${ratingFilter === null ? 'bg-black border-black' : 'bg-white border-gray-300'}`}

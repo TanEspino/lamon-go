@@ -11,7 +11,7 @@ export default function ModalScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const isEditing = !!params.id;
-    const { addReview, updateReview } = useReviews();
+    const { addReview, updateReview, reviews } = useReviews();
 
     const [restaurantName, setRestaurantName] = useState('');
     const [dish, setDish] = useState('');
@@ -23,6 +23,15 @@ export default function ModalScreen() {
     const [dateOrdered, setDateOrdered] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Compute unique restaurant names from past reviews
+    const allUniquePlaces = Array.from(new Set(reviews?.filter(r => r.restaurant_name).map(r => r.restaurant_name) || []));
+    
+    // Filter places based on current input
+    const filteredRestaurants = restaurantName.trim() === '' 
+        ? [] // Return empty array if user hasn't typed anything yet
+        : allUniquePlaces.filter(place => place.toLowerCase().includes(restaurantName.trim().toLowerCase()));
 
     useEffect(() => {
         if (isEditing) {
@@ -178,21 +187,56 @@ export default function ModalScreen() {
                                 placeholder="Name of the dish..."
                                 placeholderTextColor="#9CA3AF"
                                 className="flex-1 text-base text-black"
+                                style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10 }}
                             />
                         </View>
 
                         {/* Restaurant */}
-                        <View className="flex-row items-center py-4 border-b border-gray-100">
-                            <View className="w-8 items-center mr-3">
-                                <Ionicons name="location-outline" size={24} color="#262626" />
+                        <View className="z-10 relative">
+                            <View className="flex-row items-center py-4 border-b border-gray-100">
+                                <View className="w-8 items-center mr-3">
+                                    <Ionicons name="location-outline" size={24} color="#262626" />
+                                </View>
+                                <TextInput
+                                    value={restaurantName}
+                                    onChangeText={(text) => {
+                                        setRestaurantName(text);
+                                        setShowSuggestions(true);
+                                    }}
+                                    onFocus={() => setShowSuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                    placeholder="Add location (Restaurant)..."
+                                    placeholderTextColor="#9CA3AF"
+                                    className="flex-1 text-base text-black"
+                                    style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10 }}
+                                />
                             </View>
-                            <TextInput
-                                value={restaurantName}
-                                onChangeText={setRestaurantName}
-                                placeholder="Add location (Restaurant)..."
-                                placeholderTextColor="#9CA3AF"
-                                className="flex-1 text-base text-black"
-                            />
+                            
+                            {/* Autocomplete Suggestions */}
+                            {showSuggestions && filteredRestaurants.length > 0 && (
+                                <View 
+                                    className="bg-gray-50 border border-gray-300 rounded-lg absolute left-10 right-0 z-50 overflow-hidden"
+                                    style={{ top: 60, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 }}
+                                >
+                                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 150 }}>
+                                        {filteredRestaurants.map((place, index) => (
+                                            <Pressable 
+                                                key={index} 
+                                                className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredRestaurants.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                onPress={() => {
+                                                    setRestaurantName(place);
+                                                    setShowSuggestions(false);
+                                                }}
+                                            >
+                                                <View className="mr-3">
+                                                    <Ionicons name="search-outline" size={18} color="#6B7280" />
+                                                </View>
+                                                <Text className="text-base text-gray-800 font-medium flex-1" numberOfLines={1}>{place}</Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            )}
                         </View>
 
                         {/* Price & Currency */}
@@ -212,6 +256,7 @@ export default function ModalScreen() {
                                     placeholderTextColor="#9CA3AF"
                                     keyboardType="numeric"
                                     className="flex-1 text-base text-black"
+                                    style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10 }}
                                 />
                             </View>
                         </View>
@@ -260,6 +305,8 @@ export default function ModalScreen() {
                                 placeholderTextColor="#9CA3AF"
                                 multiline
                                 className="text-base text-black min-h-[100px]"
+                                style={{ paddingTop: 8, paddingBottom: 16 }}
+                                includeFontPadding={false}
                                 textAlignVertical="top"
                             />
                         </View>
