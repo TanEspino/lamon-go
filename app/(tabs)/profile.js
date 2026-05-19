@@ -40,7 +40,8 @@ export default function ProfileScreen() {
 
     // Calculate grid item size (accounting for the left sidebar on all resolutions and 600px max-width)
     const { width } = useWindowDimensions();
-    const availableWidth = width - 48; // Minus 48px left navigation sidebar
+    const isLargeScreen = width >= 600;
+    const availableWidth = isLargeScreen ? width - 48 : width; // Subtract 48px sidebar only if it is visible
     const containerWidth = Math.min(availableWidth, 600);
     const itemSize = containerWidth / 3;
 

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useScrollToTop } from '@react-navigation/native';
 import ReviewCard from '../../components/ReviewCard';
 import { useReviews } from '../../context/ReviewsContext';
@@ -11,6 +11,8 @@ export default function FeedScreen() {
     const { reviews } = useReviews();
     const { user } = useAuth();
     const router = useRouter();
+    const { width } = useWindowDimensions();
+    const isLargeScreen = width >= 600;
     const flatListRef = useRef(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
     
@@ -85,7 +87,7 @@ export default function FeedScreen() {
             />
 
             {/* Scroll to Top Button */}
-            {showScrollTop && (
+            {showScrollTop && isLargeScreen && (
                 <TouchableOpacity
                     onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
                     className="absolute bottom-6 right-6 bg-turquoise w-12 h-12 rounded-full items-center justify-center shadow-lg"
