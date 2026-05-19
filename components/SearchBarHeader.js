@@ -6,6 +6,7 @@ import { useReviews } from '../context/ReviewsContext';
 export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFilter, setRatingFilter, searchType, setSearchType }) {
     const { reviews } = useReviews();
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
 
     // Compute unique lists
     const allUniqueRestaurants = Array.from(new Set(reviews?.filter(r => r.restaurant_name).map(r => r.restaurant_name) || []));
@@ -45,21 +46,27 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
 
             {/* Search Bar Container */}
             <View className="z-50 relative mb-4">
-                <View className="flex-row items-center bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-2">
-                    <Ionicons name="search" size={20} color="#9CA3AF" />
+                <View className={`flex-row items-center bg-white border shadow-sm rounded-xl px-4 py-2 ${isFocused ? 'border-blue-500' : 'border-gray-200'}`}>
+                    <Ionicons name="search" size={20} color={isFocused ? "#3B82F6" : "#9CA3AF"} />
                     <TextInput
                         value={searchQuery}
                         onChangeText={(text) => {
                             setSearchQuery(text);
                             setShowSuggestions(true);
                         }}
-                        onFocus={() => setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        onFocus={() => {
+                            setIsFocused(true);
+                            setShowSuggestions(true);
+                        }}
+                        onBlur={() => {
+                            setIsFocused(false);
+                            setTimeout(() => setShowSuggestions(false), 200);
+                        }}
                         placeholder={searchType === 'dish' ? "Search for a dish..." : "Search for a restaurant..."}
                         className="flex-1 ml-2 text-base"
                         autoCapitalize="none"
                         clearButtonMode="while-editing"
-                        style={{ minHeight: 32, paddingVertical: 0 }}
+                        style={{ minHeight: 32, paddingVertical: 0, outlineStyle: 'none' }}
                     />
                 </View>
 

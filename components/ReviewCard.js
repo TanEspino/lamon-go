@@ -1,38 +1,52 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestaurantPress }) {
-    const { profile } = useAuth();
-    // review object structure based on schema:
-    // { dish_name, restaurant_name, rating, verdict, photo_url, username, avatar_url, created_at, notes, price }
+    const { user } = useAuth();
+
+    // Format the date nicely
+    const dateString = new Date(review.created_at || Date.now()).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+
+    // Fallback avatar URL (high-quality placeholder)
+    const avatarUrl = review.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80';
 
     return (
-        <View className="bg-white mb-6">
-            {/* Header: Dish and Restaurant */}
-            <View className="flex-row items-start px-5 pt-4 pb-3">
-                <View className="flex-1 justify-center">
-                    <Text 
-                        className="font-bold text-gray-900 text-2xl tracking-widest capitalize mb-1"
-                        style={{ fontFamily: 'serif' }}
-                    >
-                        {review.dish_name}
-                    </Text>
-                    <TouchableOpacity onPress={onRestaurantPress} className="mt-0.5">
-                        <Text className="text-gray-500 font-medium text-sm flex-row items-center">
-                            <Ionicons name="location-outline" size={12} color="#6B7280" /> {review.restaurant_name}
+        <View className="bg-white mb-6 pb-4">
+            {/* Header: Dish Name at the Top & Restaurant Below */}
+            <View className="px-5 pt-4 pb-3 flex-row justify-between items-start">
+                <View className="flex-1">
+                    {/* Dish Name */}
+                    <View className="flex-row items-center space-x-2 mb-0">
+                        <Ionicons name="restaurant-outline" size={18} color="#737373" style={{ marginTop: 2 }} />
+                        <Text className="text-2xl font-semibold text-neutral-800 capitalize tracking-tight flex-1" style={{ fontFamily: 'serif', lineHeight: 28 }}>
+                            {review.dish_name}
                         </Text>
-                    </TouchableOpacity>
+                    </View>
+                    
+                    {/* Restaurant Location */}
+                    <View className="flex-row items-center mt-0">
+                        <Ionicons name="location-outline" size={14} color="#6B7280" />
+                        <Text className="text-gray-500 font-bold text-sm pl-1">
+                            {review.restaurant_name}
+                        </Text>
+                    </View>
                 </View>
-                <View className="flex-row items-center space-x-2 ml-2">
+
+                {/* Edit & Delete Action Buttons */}
+                <View className="flex-row items-center space-x-2 mt-1">
                     {onEdit && (
                         <TouchableOpacity onPress={onEdit} className="p-1.5 bg-gray-50 rounded-full">
-                            <Ionicons name="create-outline" size={18} color="black" />
+                            <Ionicons name="create-outline" size={16} color="black" />
                         </TouchableOpacity>
                     )}
                     {onDelete && (
                         <TouchableOpacity onPress={onDelete} className="p-1.5 bg-red-50 rounded-full">
-                            <Ionicons name="trash-outline" size={18} color="red" />
+                            <Ionicons name="trash-outline" size={16} color="red" />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -47,31 +61,37 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                         resizeMode="cover"
                     />
 
-                    {/* High-Contrast Overlays */}
-                    <View className="absolute bottom-3 left-3 bg-gray-900 px-3 py-1.5 rounded-full flex-row items-center shadow-md">
-                        <Ionicons name="star" size={14} color="white" />
-                        <Text className="font-bold ml-1 text-xs text-white">{review.rating}.0</Text>
+                    {/* Rating Tag */}
+                    <View className="absolute bottom-3 left-3 bg-gray-900/90 px-3 py-1.5 rounded-full flex-row items-center shadow-md">
+                        <Ionicons name="star" size={12} color="white" style={{ marginRight: 2 }} />
+                        <Text className="font-extrabold text-xs text-white">{review.rating}.0</Text>
                     </View>
 
+                    {/* Price Tag */}
                     {review.price && (
-                        <View className="absolute bottom-3 right-3 bg-primary px-3 py-1.5 rounded-full shadow-md">
-                            <Text className="font-bold text-xs text-white">{review.currency || 'PHP'} {parseFloat(review.price).toFixed(2)}</Text>
+                        <View className="absolute bottom-3 right-3 bg-[#E11D48] px-3 py-1.5 rounded-full shadow-md">
+                            <Text className="font-extrabold text-xs text-white">
+                                {review.currency || 'PHP'} {parseFloat(review.price).toFixed(2)}
+                            </Text>
                         </View>
                     )}
                 </View>
             </View>
 
-            {/* Content / Notes */}
-            <View className="px-5 pt-4 pb-4">
+            {/* Content: Caption & Date */}
+            <View className="px-5 pt-4">
+                {/* Notes / Review Description with Left Accent Bar */}
                 {review.notes && (
-                    <View className="border-l-4 border-turquoise pl-3 mb-3 ml-1">
-                        <Text className="text-gray-800 text-base leading-6 italic" style={{ fontFamily: 'serif' }}>
+                    <View className="border-l-4 border-cyan-400 pl-3 py-0.5 mb-0.5">
+                        <Text className="text-gray-800 text-base leading-relaxed italic" style={{ fontFamily: 'serif' }}>
                             "{review.notes}"
                         </Text>
                     </View>
                 )}
-                <Text className="text-gray-400 text-xs font-medium uppercase tracking-wider ml-1">
-                    {new Date(review.created_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+
+                {/* Date */}
+                <Text className="text-gray-400 text-xs font-semibold uppercase tracking-widest mt-0">
+                    {dateString}
                 </Text>
             </View>
         </View>

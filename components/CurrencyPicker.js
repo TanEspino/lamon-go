@@ -8,6 +8,7 @@ const COMMON_CURRENCIES = [
 
 export default function CurrencyPicker({ visible, onClose, onSelect, currentCurrency }) {
     const [search, setSearch] = useState('');
+    const [isFocused, setIsFocused] = useState(false);
 
     const filteredCurrencies = COMMON_CURRENCIES.filter(c =>
         c.toLowerCase().includes(search.toLowerCase())
@@ -29,14 +30,17 @@ export default function CurrencyPicker({ visible, onClose, onSelect, currentCurr
                         </Pressable>
                     </View>
 
-                    <View className="bg-gray-100 rounded-xl px-4 py-3 mb-4 flex-row items-center">
-                        <Ionicons name="search" size={20} color="#9CA3AF" />
+                    <View className={`bg-gray-100 border rounded-xl px-4 py-3 mb-4 flex-row items-center ${isFocused ? 'border-blue-500 bg-white' : 'border-transparent'}`}>
+                        <Ionicons name="search" size={20} color={isFocused ? "#3B82F6" : "#9CA3AF"} />
                         <TextInput
                             className="flex-1 ml-2 text-base"
                             placeholder="Search currency..."
                             value={search}
                             onChangeText={setSearch}
                             autoCapitalize="characters"
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setIsFocused(false)}
+                            style={{ outlineStyle: 'none' }}
                         />
                     </View>
 

@@ -38,9 +38,10 @@ export default function ProfileScreen() {
         }
     }, [viewMode, targetIndex]);
 
-    // Calculate grid item size (accounting for the 600px max-width on Web)
+    // Calculate grid item size (accounting for the left sidebar on all resolutions and 600px max-width)
     const { width } = useWindowDimensions();
-    const containerWidth = Math.min(width, 600);
+    const availableWidth = width - 48; // Minus 48px left navigation sidebar
+    const containerWidth = Math.min(availableWidth, 600);
     const itemSize = containerWidth / 3;
 
     const renderGridItem = ({ item, index }) => (
@@ -96,7 +97,7 @@ export default function ProfileScreen() {
     if (!profile) return null; // Or loading spinner
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <SafeAreaView className="flex-1 bg-background">
             <Stack.Screen
                 options={{
                     title: profile.username || 'Profile',
@@ -225,7 +226,50 @@ export default function ProfileScreen() {
                 keyExtractor={(item) => item.id}
                 renderItem={viewMode === 'grid' ? renderGridItem : renderListItem}
                 numColumns={viewMode === 'grid' ? 3 : 1}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                ListEmptyComponent={() => (
+                    <View className="items-center justify-center px-8 py-10">
+                        {/* Elegant Icon in Turquoise */}
+                        <Ionicons 
+                            name="images-outline" 
+                            size={56} 
+                            color="#40E0D0" 
+                            style={{ marginBottom: 12 }}
+                        />
+                        
+                        {/* Clean, Subtle Grey Message */}
+                        <Text className="text-base font-bold tracking-tight text-neutral-400 text-center mb-6">
+                            Ready for the first bite?
+                        </Text>
+                        
+                        {/* Compact Premium Red Button */}
+                        <TouchableOpacity
+                            onPress={() => router.push('/modal')}
+                            className="bg-primary px-5 py-2.5 rounded-xl flex-row items-center justify-center shadow-md"
+                            style={{ 
+                                shadowColor: '#E11D48', 
+                                shadowOffset: { width: 0, height: 2 }, 
+                                shadowOpacity: 0.15, 
+                                shadowRadius: 4,
+                                elevation: 3
+                            }}
+                            activeOpacity={0.85}
+                        >
+                            <Ionicons name="add-circle" size={16} color="white" style={{ marginRight: 6 }} />
+                            <Text className="text-white font-extrabold text-xs tracking-wider uppercase">
+                                Drop A Dish
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+                contentContainerStyle={[
+                    myReviews.length === 0 ? { flexGrow: 1 } : {},
+                    { 
+                        paddingBottom: 40, 
+                        width: '100%', 
+                        maxWidth: 600, 
+                        alignSelf: 'center' 
+                    }
+                ]}
                 showsVerticalScrollIndicator={false}
                 onScroll={(e) => {
                     const offsetY = e.nativeEvent.contentOffset.y;

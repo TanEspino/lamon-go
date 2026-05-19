@@ -15,6 +15,7 @@ export default function OnboardingScreen() {
     const [bio, setBio] = useState(profile?.bio || '');
     const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
     const [isSaving, setIsSaving] = useState(false);
+    const [focusedField, setFocusedField] = useState(null);
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -164,10 +165,14 @@ export default function OnboardingScreen() {
                     {/* Form Fields - Instagram Style List */}
                     <View className="px-4 py-2">
                         {/* Username */}
-                        <View className="py-2 border-b border-gray-100">
+                        <View className={`py-2 border-b ${focusedField === 'username' ? 'border-blue-500' : 'border-gray-100'}`}>
                             <View className="flex-row items-center">
                                 <View className="w-8 items-center mr-3">
-                                    <Ionicons name="person-outline" size={24} color="#262626" />
+                                    <Ionicons 
+                                        name="person-outline" 
+                                        size={24} 
+                                        color={focusedField === 'username' ? '#3B82F6' : '#262626'} 
+                                    />
                                 </View>
                                 <TextInput
                                     value={username}
@@ -177,16 +182,23 @@ export default function OnboardingScreen() {
                                     autoCapitalize="none"
                                     maxLength={20}
                                     className="flex-1 text-base text-black py-2"
+                                    onFocus={() => setFocusedField('username')}
+                                    onBlur={() => setFocusedField(null)}
+                                    style={{ outlineStyle: 'none' }}
                                 />
                             </View>
                             <Text className="text-right text-[10px] text-gray-400 mt-1">{username.length}/20</Text>
                         </View>
 
                         {/* Bio */}
-                        <View className="py-2 border-b border-gray-100">
+                        <View className={`py-2 border-b ${focusedField === 'bio' ? 'border-blue-500' : 'border-gray-100'}`}>
                             <View className="flex-row items-center">
                                 <View className="w-8 items-center mr-3">
-                                    <Ionicons name="document-text-outline" size={24} color="#262626" />
+                                    <Ionicons 
+                                        name="document-text-outline" 
+                                        size={24} 
+                                        color={focusedField === 'bio' ? '#3B82F6' : '#262626'} 
+                                    />
                                 </View>
                                 <TextInput
                                     value={bio}
@@ -196,6 +208,9 @@ export default function OnboardingScreen() {
                                     multiline
                                     maxLength={80}
                                     className="flex-1 text-base text-black py-2"
+                                    onFocus={() => setFocusedField('bio')}
+                                    onBlur={() => setFocusedField(null)}
+                                    style={{ outlineStyle: 'none' }}
                                 />
                             </View>
                             <Text className="text-right text-[10px] text-gray-400 mt-1">{bio.length}/80</Text>
