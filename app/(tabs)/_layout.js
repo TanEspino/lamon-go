@@ -2,17 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { Image, View, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
     const { profile } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const { width } = useWindowDimensions();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const isLargeScreen = width >= 600;
 
     const activeColor = '#E11D48';
-    const inactiveColor = '#737373'; // Neutral gray
+    const inactiveColor = isDark ? '#A3A3A3' : '#737373'; // Neutral gray
 
     const isActive = (route) => {
         if (route === 'index') return pathname === '/' || pathname === '/index';
@@ -22,10 +25,10 @@ export default function TabLayout() {
     };
 
     return (
-        <View className="flex-1 flex-row bg-background">
+        <View className="flex-1 flex-row bg-background dark:bg-zinc-950">
             {/* Left Vertical Sidebar (Visible only on large screens) */}
             {isLargeScreen && (
-                <View className="w-12 bg-gray-100 border-r border-gray-200 flex-col items-center py-6 justify-between" style={{ height: '100%' }}>
+                <View className="w-12 bg-gray-100 dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 flex-col items-center py-6 justify-between" style={{ height: '100%' }}>
                     {/* Top Section: Spacer */}
                     <View style={{ height: 10 }} />
 
@@ -33,10 +36,10 @@ export default function TabLayout() {
                     <View className="flex-col items-center space-y-6 flex-1 justify-center">
                         {/* Feed Tab */}
                         <TouchableOpacity 
-                            onPress={() => router.push('/')}
-                            className="p-2.5 rounded-2xl items-center justify-center"
-                            style={{ backgroundColor: isActive('index') ? '#FFF1F2' : 'transparent' }}
-                            activeOpacity={0.7}
+                             onPress={() => router.push('/')}
+                             className="p-2.5 rounded-2xl items-center justify-center"
+                             style={{ backgroundColor: isActive('index') ? (isDark ? '#4C0519' : '#FFF1F2') : 'transparent' }}
+                             activeOpacity={0.7}
                         >
                             <Ionicons size={24} name={isActive('index') ? "home" : "home-outline"} color={isActive('index') ? "#E11D48" : "#737373"} />
                         </TouchableOpacity>
@@ -45,10 +48,10 @@ export default function TabLayout() {
                         <TouchableOpacity 
                             onPress={() => router.push('/discover')}
                             className="p-2.5 rounded-2xl items-center justify-center"
-                            style={{ backgroundColor: isActive('discover') ? '#FFF1F2' : 'transparent' }}
+                            style={{ backgroundColor: isActive('discover') ? (isDark ? '#4C0519' : '#FFF1F2') : 'transparent' }}
                             activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#E11D48" : "#737373"} />
+                            <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#E11D48" : (isDark ? "#A3A3A3" : "#737373")} />
                         </TouchableOpacity>
 
                         {/* Add Post Button */}
@@ -57,7 +60,7 @@ export default function TabLayout() {
                             className="p-2.5 rounded-2xl items-center justify-center"
                             activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name="add-circle-outline" color="#737373" />
+                            <Ionicons size={24} name="add-circle-outline" color={isDark ? "#A3A3A3" : "#737373"} />
                         </TouchableOpacity>
 
                         {/* Profile Tab */}
@@ -74,12 +77,12 @@ export default function TabLayout() {
                                         height: 28,
                                         borderRadius: 14,
                                         borderWidth: isActive('profile') ? 2 : 1,
-                                        borderColor: isActive('profile') ? '#E11D48' : '#E5E7EB'
+                                        borderColor: isActive('profile') ? '#E11D48' : (isDark ? '#27272A' : '#E5E7EB')
                                     }}
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : "#737373"} />
+                                <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : (isDark ? "#A3A3A3" : "#737373")} />
                             )}
                         </TouchableOpacity>
                     </View>
@@ -90,7 +93,7 @@ export default function TabLayout() {
             )}
 
             {/* Right Side Screen Content Area */}
-            <View className="flex-1 relative">
+            <View className="flex-1 relative bg-white dark:bg-zinc-900">
                 <Tabs
                     screenOptions={({ route }) => ({
                         headerShown: false,
@@ -100,9 +103,9 @@ export default function TabLayout() {
                         safeAreaInsets: { bottom: 0, top: 0, left: 0, right: 0 }, // Prevent safe area paddings from offsetting icons
                         tabBarStyle: {
                             display: isLargeScreen ? 'none' : 'flex', // Show bottom tab bar only on mobile!
-                            backgroundColor: '#F9FAFB', 
+                            backgroundColor: isDark ? '#09090B' : '#F9FAFB', 
                             borderTopWidth: 1,
-                            borderTopColor: '#E5E7EB',
+                            borderTopColor: isDark ? '#27272A' : '#E5E7EB',
                             height: 60,
                             paddingBottom: 0,
                             paddingTop: 0,
@@ -139,7 +142,7 @@ export default function TabLayout() {
                                                 height: 28,
                                                 borderRadius: 14,
                                                 borderWidth: focused ? 2 : 1,
-                                                borderColor: focused ? '#E11D48' : '#E5E7EB'
+                                                borderColor: focused ? '#E11D48' : (isDark ? '#27272A' : '#E5E7EB')
                                             }}
                                             resizeMode="cover"
                                         />

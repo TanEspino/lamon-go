@@ -2,10 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, Text, TouchableOpacity, View, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useState, useRef, useEffect } from 'react';
+import { useColorScheme } from 'nativewind';
 
 export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestaurantPress }) {
     const { user } = useAuth();
     const { width: windowWidth } = useWindowDimensions();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     // Responsive card width computation for immediate correct sizing
     const fallbackWidth = Math.min(windowWidth, 600) - 32;
@@ -58,47 +61,46 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
     const avatarUrl = review.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80';
 
     return (
-        <View className="bg-white mb-6 pb-4">
+        <View className="bg-white dark:bg-zinc-900 mb-6 pb-4">
             {/* Header: Dish Name at the Top & Restaurant Below */}
             <View className="px-5 pt-4 pb-3 flex-row justify-between items-start">
                 <View className="flex-1">
                     {/* Dish Name */}
                     <View className="flex-row items-center space-x-2 mb-0">
-                        <Ionicons name="restaurant-outline" size={18} color="#737373" style={{ marginTop: 2 }} />
-                        <Text className="text-2xl font-semibold text-neutral-800 capitalize tracking-tight flex-1" style={{ fontFamily: 'serif', lineHeight: 28 }}>
+                        <Ionicons name="restaurant-outline" size={18} color={isDark ? "#A3A3A3" : "#737373"} style={{ marginTop: 2 }} />
+                        <Text className="text-2xl font-semibold text-neutral-800 dark:text-white capitalize tracking-tight flex-1" style={{ fontFamily: 'serif', lineHeight: 28 }}>
                             {review.dish_name}
                         </Text>
                     </View>
                     
                     {/* Restaurant Location */}
                     <View className="flex-row items-center mt-0">
-                        <Ionicons name="location-outline" size={14} color="#6B7280" />
-                        <Text className="text-gray-500 font-bold text-sm pl-1">
+                        <Ionicons name="location-outline" size={14} color={isDark ? "#A3A3A3" : "#6B7280"} />
+                        <Text className="text-gray-500 dark:text-zinc-400 font-bold text-sm pl-1">
                             {review.restaurant_name}
                         </Text>
                     </View>
                 </View>
-
+ 
                 {/* Edit & Delete Action Buttons */}
                 <View className="flex-row items-center space-x-2 mt-1">
                     {onEdit && (
-                        <TouchableOpacity onPress={onEdit} className="p-1.5 bg-gray-50 rounded-full">
-                            <Ionicons name="create-outline" size={16} color="black" />
+                        <TouchableOpacity onPress={onEdit} className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full">
+                            <Ionicons name="create-outline" size={16} color={isDark ? "white" : "black"} />
                         </TouchableOpacity>
                     )}
                     {onDelete && (
-                        <TouchableOpacity onPress={onDelete} className="p-1.5 bg-red-50 rounded-full">
+                        <TouchableOpacity onPress={onDelete} className="p-1.5 bg-red-50 dark:bg-red-950/40 rounded-full">
                             <Ionicons name="trash-outline" size={16} color="red" />
                         </TouchableOpacity>
                     )}
                 </View>
             </View>
 
-            {/* Hero Image - Polaroid Style */}
             <View className="px-4">
                 <View 
                     onLayout={handleLayout}
-                    className="rounded-3xl overflow-hidden bg-gray-100 shadow-sm relative w-full aspect-[4/5]"
+                    className="rounded-3xl overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm relative w-full aspect-[4/5]"
                 >
                     {photos.length > 0 ? (
                         <View className="w-full h-full relative">
@@ -187,15 +189,15 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
             <View className="px-5 pt-4">
                 {/* Notes / Review Description with Left Accent Bar */}
                 {review.notes && (
-                    <View className="border-l-4 border-cyan-400 pl-3 py-0.5 mb-0.5">
-                        <Text className="text-gray-800 text-base leading-relaxed italic" style={{ fontFamily: 'serif' }}>
+                    <View className="border-l-4 border-cyan-400 dark:border-cyan-600 pl-3 py-0.5 mb-0.5">
+                        <Text className="text-gray-800 dark:text-zinc-200 text-base leading-relaxed italic" style={{ fontFamily: 'serif' }}>
                             "{review.notes}"
                         </Text>
                     </View>
                 )}
 
                 {/* Date */}
-                <Text className="text-gray-400 text-xs font-semibold uppercase tracking-widest mt-0">
+                <Text className="text-gray-400 dark:text-zinc-500 text-xs font-semibold uppercase tracking-widest mt-0">
                     {dateString}
                 </Text>
             </View>

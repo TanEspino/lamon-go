@@ -6,6 +6,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import ReviewCard from '../../components/ReviewCard';
 import { useReviews } from '../../context/ReviewsContext';
 import { useAuth } from '../../context/AuthContext';
+import { useColorScheme } from 'nativewind';
 
 export default function FeedScreen() {
     const { reviews } = useReviews();
@@ -15,6 +16,9 @@ export default function FeedScreen() {
     const isLargeScreen = width >= 600;
     const flatListRef = useRef(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
+
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
     
     // Automatically scroll to top when the active tab icon is tapped
     useScrollToTop(flatListRef);
@@ -23,11 +27,11 @@ export default function FeedScreen() {
     const myReviews = reviews.filter(r => r.user_id === user?.id);
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
             {/* Custom Logo Header */}
-            <View className="items-center justify-center bg-gray-100 border-b border-gray-200" style={{ height: 60, width: '100%' }}>
+            <View className="items-center justify-center bg-gray-100 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
                 <Image
-                    source={require('../../assets/logo_profile.png')}
+                    source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
                     style={{ width: 140, height: 40 }}
                     resizeMode="contain"
                 />

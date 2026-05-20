@@ -6,11 +6,15 @@ import ReviewCard from '../../components/ReviewCard';
 import SearchBarHeader from '../../components/SearchBarHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useReviews } from '../../context/ReviewsContext';
+import { useColorScheme } from 'nativewind';
 
 export default function DiscoverScreen() {
     const router = useRouter();
     const { reviews, deleteReview } = useReviews();
     const { user } = useAuth();
+
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
     // ... existing function body ...
 
 
@@ -50,24 +54,24 @@ export default function DiscoverScreen() {
     }, [reviews, user, searchQuery, ratingFilter, searchType]);
 
     const renderInitialState = () => (
-        <View className="flex-1 items-center justify-center py-20 px-8">
-            <View className="bg-teal-50 p-6 rounded-full mb-4">
+        <View className="flex-1 items-center justify-center py-20 px-8 bg-white dark:bg-zinc-900">
+            <View className="bg-teal-50 dark:bg-zinc-800 p-6 rounded-full mb-4">
                 <Ionicons name="compass-outline" size={64} color="#40E0D0" />
             </View>
-            <Text className="text-2xl font-bold text-gray-900 mb-2 text-center">Rediscover Your Food Adventures</Text>
-            <Text className="text-gray-500 text-center text-base leading-6">
+            <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Rediscover Your Food Adventures</Text>
+            <Text className="text-gray-500 dark:text-zinc-400 text-center text-base leading-6">
                 Search for a dish or restaurant to find that one meal you can't forget.
             </Text>
         </View>
     );
 
     const renderNoResultsState = () => (
-        <View className="flex-1 items-center justify-center py-20 px-8">
-            <View className="bg-gray-50 p-6 rounded-full mb-4">
-                <Ionicons name="search-outline" size={48} color="#9CA3AF" />
+        <View className="flex-1 items-center justify-center py-20 px-8 bg-white dark:bg-zinc-900">
+            <View className="bg-gray-50 dark:bg-zinc-800 p-6 rounded-full mb-4">
+                <Ionicons name="search-outline" size={48} color={isDark ? '#71717A' : '#9CA3AF'} />
             </View>
-            <Text className="text-xl font-bold text-gray-900 mb-2">No Result Found</Text>
-            <Text className="text-gray-500 text-center">
+            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Result Found</Text>
+            <Text className="text-gray-500 dark:text-zinc-400 text-center">
                 We couldn't find any reviews matching "{searchQuery}" with that rating.
             </Text>
         </View>
@@ -77,8 +81,8 @@ export default function DiscoverScreen() {
     const isEmpty = (!searchQuery && ratingFilter === null);
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }}>
+        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
+            <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }} className="bg-white dark:bg-zinc-900">
                 <SearchBarHeader
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
