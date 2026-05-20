@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -106,7 +105,14 @@ export default function OnboardingScreen() {
             await fetchProfile(user.id);
 
             // Mark onboarding as completed in local storage
-            await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+            if (Platform.OS === 'web') {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    window.localStorage.setItem('hasCompletedOnboarding', 'true');
+                }
+            } else {
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+            }
             
             // Redirect properly based on context
             if (router.canGoBack()) {

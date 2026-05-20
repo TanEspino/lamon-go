@@ -19,16 +19,18 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
         : activeList.filter(item => item.toLowerCase().includes(searchQuery.trim().toLowerCase()));
 
     return (
-        <View className="bg-gray-100 px-4 py-2 border-b border-gray-200 z-50">
+        <View className="bg-gray-100 border-b border-gray-200 z-50">
             {/* Custom Logo Header */}
-            <View className="items-center justify-center pb-3">
+            <View className="items-center justify-center border-b border-gray-200" style={{ height: 60, width: '100%' }}>
                 <Image
                     source={require('../assets/logo_profile.png')}
-                    style={{ width: 150, height: 45 }}
+                    style={{ width: 140, height: 40 }}
                     resizeMode="contain"
                 />
             </View>
-            {/* Search Type Toggle */}
+            {/* Search Controls Container with its own padding */}
+            <View className="px-4 pb-3 pt-2">
+                {/* Search Type Toggle */}
             <View className="flex-row mb-3 bg-gray-200 p-1 rounded-xl">
                 <TouchableOpacity
                     onPress={() => setSearchType('dish')}
@@ -81,6 +83,10 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
                                 <Pressable 
                                     key={index} 
                                     className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredSuggestions.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                    onPressIn={() => {
+                                        setSearchQuery(item);
+                                        setShowSuggestions(false);
+                                    }}
                                     onPress={() => {
                                         setSearchQuery(item);
                                         setShowSuggestions(false);
@@ -115,6 +121,7 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
                         <Ionicons name="star" size={12} color={ratingFilter === star ? 'white' : 'black'} />
                     </TouchableOpacity>
                 ))}
+            </View>
             </View>
         </View>
     );

@@ -56,44 +56,46 @@ export default function RestaurantScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-white">
-            <Stack.Screen options={{ title: name || 'Restaurant', headerBackTitle: 'Back' }} />
+            <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }}>
+                <Stack.Screen options={{ title: name || 'Restaurant', headerBackTitle: 'Back' }} />
 
-            <FlatList
-                ListHeaderComponent={() => (
-                    <View className="p-6 border-b border-gray-100 bg-gray-50">
-                        <Text className="text-3xl font-extrabold text-gray-900 mb-2">{name}</Text>
-                        <View className="flex-row items-center mb-4">
-                            <Ionicons name="location-outline" size={20} color="gray" />
-                            <Text className="text-gray-600 ml-1">123 Food Street, Flavor Town</Text>
-                        </View>
-
-                        <View className="flex-row items-center space-x-4">
-                            <View className="flex-row items-center bg-yellow-100 px-3 py-1 rounded-full">
-                                <Ionicons name="star" size={16} color="#B45309" />
-                                <Text className="ml-1 font-bold text-yellow-800">{averageRating} avg</Text>
+                <FlatList
+                    ListHeaderComponent={() => (
+                        <View className="p-6 border-b border-gray-100 bg-gray-50">
+                            <Text className="text-3xl font-extrabold text-gray-900 mb-2">{name}</Text>
+                            <View className="flex-row items-center mb-4">
+                                <Ionicons name="location-outline" size={20} color="gray" />
+                                <Text className="text-gray-600 ml-1">123 Food Street, Flavor Town</Text>
                             </View>
-                            <Text className="text-gray-500">{restaurantReviews.length} reviews</Text>
+
+                            <View className="flex-row items-center space-x-4">
+                                <View className="flex-row items-center bg-yellow-100 px-3 py-1 rounded-full">
+                                    <Ionicons name="star" size={16} color="#B45309" />
+                                    <Text className="ml-1 font-bold text-yellow-800">{averageRating} avg</Text>
+                                </View>
+                                <Text className="text-gray-500">{restaurantReviews.length} reviews</Text>
+                            </View>
                         </View>
-                    </View>
-                )}
-                data={restaurantReviews}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View className="px-4 pt-4">
-                        <ReviewCard
-                            review={item}
-                            onPress={() => router.push({ pathname: '/modal', params: item })}
-                        // Don't show delete on public view usually, but for MVP keep it simple
-                        />
-                    </View>
-                )}
-                contentContainerStyle={{ paddingBottom: 40 }}
-                ListEmptyComponent={() => (
-                    <View className="p-8 items-center">
-                        <Text className="text-gray-400">No reviews found for this place yet.</Text>
-                    </View>
-                )}
-            />
+                    )}
+                    data={restaurantReviews}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <View className="px-4 pt-4">
+                            <ReviewCard
+                                review={item}
+                                onPress={() => router.push({ pathname: '/modal', params: item })}
+                            // Don't show delete on public view usually, but for MVP keep it simple
+                            />
+                        </View>
+                    )}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    ListEmptyComponent={() => (
+                        <View className="p-8 items-center">
+                            <Text className="text-gray-400">No reviews found for this place yet.</Text>
+                        </View>
+                    )}
+                />
+            </View>
         </SafeAreaView>
     );
 }

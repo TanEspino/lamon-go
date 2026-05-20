@@ -26,21 +26,24 @@ export function ReviewsProvider({ children }) {
             if (error) throw error;
             
             // Format data to match app expectations exactly as they were with mock data
-            const formattedReviews = data.map(r => ({
-                id: r.id,
-                user_id: r.user_id,
-                username: r.profiles?.username || r.profiles?.full_name || 'Guest',
-                avatar_url: r.profiles?.avatar_url || 'https://placehold.co/100x100/png?text=?',
-                restaurant_name: r.restaurant_name,
-                dish_name: r.dish_name,
-                rating: r.rating,
-                price: r.price,
-                currency: r.currency,
-                notes: r.caption,
-                photo_url: r.image_url,
-                photos: r.image_url ? [r.image_url] : [],
-                created_at: r.created_at,
-            }));
+            const formattedReviews = data.map(r => {
+                const parsedPhotos = r.image_url ? r.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+                return {
+                    id: r.id,
+                    user_id: r.user_id,
+                    username: r.profiles?.username || r.profiles?.full_name || 'Guest',
+                    avatar_url: r.profiles?.avatar_url || 'https://placehold.co/100x100/png?text=?',
+                    restaurant_name: r.restaurant_name,
+                    dish_name: r.dish_name,
+                    rating: r.rating,
+                    price: r.price,
+                    currency: r.currency,
+                    notes: r.caption,
+                    photo_url: parsedPhotos[0] || '',
+                    photos: parsedPhotos,
+                    created_at: r.created_at,
+                };
+            });
             
             setReviews(formattedReviews);
         } catch (error) {
@@ -84,6 +87,7 @@ export function ReviewsProvider({ children }) {
             if (error) throw error;
             
             // Add to local state immediately so UI feels snappy
+            const parsedPhotos = data.image_url ? data.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
             const formatted = {
                 id: data.id,
                 user_id: data.user_id,
@@ -95,8 +99,8 @@ export function ReviewsProvider({ children }) {
                 price: data.price,
                 currency: data.currency,
                 notes: data.caption,
-                photo_url: data.image_url,
-                photos: data.image_url ? [data.image_url] : [],
+                photo_url: parsedPhotos[0] || '',
+                photos: parsedPhotos,
                 created_at: data.created_at,
             };
             
@@ -108,7 +112,49 @@ export function ReviewsProvider({ children }) {
     };
 
     const updateReview = async (updatedReview) => {
-        // Will implement later if needed
+        if (!user) throw new Error("Must be logged in to update.");
+        try {
+            const dbReview = {
+                restaurant_name: updatedReview.restaurant_name,
+                dish_name: updatedReview.dish_name,
+                rating: updatedReview.rating,
+                price: updatedReview.price,
+                currency: updatedReview.currency,
+                caption: updatedReview.notes,
+                image_url: updatedReview.photo_url,
+            };
+
+            const { data, error } = await supabase
+                .from('reviews')
+                .update(dbReview)
+                .eq('id', updatedReview.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            const parsedPhotos = data.image_url ? data.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+            const formatted = {
+                id: data.id,
+                user_id: data.user_id,
+                username: profile?.username || profile?.full_name || 'Guest',
+                avatar_url: profile?.avatar_url || 'https://placehold.co/100x100/png?text=?',
+                restaurant_name: data.restaurant_name,
+                dish_name: data.dish_name,
+                rating: data.rating,
+                price: data.price,
+                currency: data.currency,
+                notes: data.caption,
+                photo_url: parsedPhotos[0] || '',
+                photos: parsedPhotos,
+                created_at: data.created_at,
+            };
+
+            setReviews(prev => prev.map(r => r.id === data.id ? formatted : r));
+        } catch (error) {
+            console.error('Error updating review:', error);
+            throw error;
+        }
     };
 
     const deleteReview = async (id) => {
@@ -120,12 +166,15 @@ export function ReviewsProvider({ children }) {
             const { error } = await supabase.from('reviews').delete().eq('id', id);
             if (error) throw error;
             
-            // 2. If the post had an image, clean up the massive file from the Storage Bucket!
-            if (reviewToDelete && reviewToDelete.photo_url && reviewToDelete.photo_url.includes('review-images')) {
-                // Extract just the filename at the very end of the URL
-                const fileName = reviewToDelete.photo_url.split('/').pop();
-                if (fileName) {
-                    await supabase.storage.from('review-images').remove([fileName]);
+            // 2. If the post had images, clean up the massive files from the Storage Bucket!
+            if (reviewToDelete && reviewToDelete.photos && reviewToDelete.photos.length > 0) {
+                const fileNamesToDelete = reviewToDelete.photos
+                    .filter(url => url.includes('review-images'))
+                    .map(url => url.split('/').pop())
+                    .filter(Boolean);
+                
+                if (fileNamesToDelete.length > 0) {
+                    await supabase.storage.from('review-images').remove(fileNamesToDelete);
                 }
             }
 

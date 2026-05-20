@@ -72,8 +72,40 @@ export default function ModalScreen() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [showDishSuggestions, setShowDishSuggestions] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [focusedField, setFocusedField] = useState(null);
+
+    const [activeIndex, setActiveIndex] = useState(0);
+    const modalScrollViewRef = useRef(null);
+    const prevPhotosLength = useRef(0);
+
+    const handleModalScroll = (event) => {
+        const contentOffset = event.nativeEvent.contentOffset.x;
+        const viewSize = event.nativeEvent.layoutMeasurement.width;
+        if (viewSize > 0) {
+            const index = Math.round(contentOffset / viewSize);
+            setActiveIndex(index);
+        }
+    };
+
+    const scrollToModalImage = (index) => {
+        if (index >= 0 && index < photos.length) {
+            modalScrollViewRef.current?.scrollTo({ x: index * containerWidth, animated: true });
+            setActiveIndex(index);
+        }
+    };
+
+    // Smart auto-scroll: automatically focus the newly added photo in the carousel
+    useEffect(() => {
+        if (photos.length > prevPhotosLength.current && prevPhotosLength.current > 0) {
+            const targetIndex = photos.length - 1;
+            setTimeout(() => {
+                scrollToModalImage(targetIndex);
+            }, 150);
+        }
+        prevPhotosLength.current = photos.length;
+    }, [photos.length]);
 
     // Compute unique restaurant names from past reviews
     const allUniquePlaces = Array.from(new Set(reviews?.filter(r => r.restaurant_name).map(r => r.restaurant_name) || []));
@@ -83,6 +115,14 @@ export default function ModalScreen() {
         ? [] // Return empty array if user hasn't typed anything yet
         : allUniquePlaces.filter(place => place.toLowerCase().includes(restaurantName.trim().toLowerCase()));
 
+    // Compute unique dish names from past reviews
+    const allUniqueDishes = Array.from(new Set(reviews?.filter(r => r.dish_name).map(r => r.dish_name) || []));
+
+    // Filter dishes based on current input
+    const filteredDishes = dish.trim() === ''
+        ? [] // Return empty array if user hasn't typed anything yet
+        : allUniqueDishes.filter(item => item.toLowerCase().includes(dish.trim().toLowerCase()));
+
     useEffect(() => {
         if (isEditing) {
             setRestaurantName(params.restaurant_name || '');
@@ -91,12 +131,17 @@ export default function ModalScreen() {
             setNotes(params.notes || '');
             if (params.photos) {
                 try {
-                    setPhotos(JSON.parse(params.photos));
+                    const parsed = typeof params.photos === 'string' ? JSON.parse(params.photos) : params.photos;
+                    setPhotos(Array.isArray(parsed) ? parsed : [parsed]);
                 } catch (e) {
-                    setPhotos(params.photos.split(','));
+                    setPhotos(String(params.photos).split(',').map(u => u.trim()).filter(Boolean));
                 }
             } else if (params.photo_url) {
-                setPhotos([params.photo_url]);
+                if (String(params.photo_url).includes(',')) {
+                    setPhotos(String(params.photo_url).split(',').map(u => u.trim()).filter(Boolean));
+                } else {
+                    setPhotos([params.photo_url]);
+                }
             }
             setPrice(params.price ? String(params.price) : '');
             setCurrency(params.currency || 'PHP');
@@ -104,16 +149,123 @@ export default function ModalScreen() {
         }
     }, [params.id]);
 
-    const pickImage = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: false,
-            allowsMultipleSelection: true,
-            quality: 0.5, // 50% compression to drastically save cloud storage space
-        });
+    const takePhoto = async (index = null) => {
+        try {
+            if (index === null && photos.length >= 5) {
+                Alert.alert(
+                    "Maximum Limit Reached 📸",
+                    "You can upload a maximum of 5 photos per post to keep your feed clean and snappy!"
+                );
+                return;
+            }
 
-        if (!result.canceled) {
-            setPhotos([...photos, ...result.assets.map(asset => asset.uri)]);
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(
+                    "Permission Denied 🚫",
+                    "Sorry, we need camera permissions to make this work! Please enable them in your settings."
+                );
+                return;
+            }
+
+            let result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.5,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const newUri = result.assets[0].uri;
+                if (index !== null && index >= 0 && index < photos.length) {
+                    const updatedPhotos = [...photos];
+                    updatedPhotos[index] = newUri;
+                    setPhotos(updatedPhotos);
+                } else {
+                    setPhotos([...photos, newUri]);
+                }
+            }
+        } catch (error) {
+            console.error("Error taking photo:", error);
+            Alert.alert("Error", "Failed to launch camera: " + error.message);
+        }
+    };
+
+    const pickImageFromLibrary = async (index = null) => {
+        try {
+            if (index === null && photos.length >= 5) {
+                Alert.alert(
+                    "Maximum Limit Reached 📸",
+                    "You can upload a maximum of 5 photos per post to keep your feed clean and snappy!"
+                );
+                return;
+            }
+
+            if (Platform.OS !== 'web') {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert(
+                        "Permission Denied 🚫",
+                        "Sorry, we need gallery permissions to browse photos! Please enable them in your settings."
+                    );
+                    return;
+                }
+            }
+
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                allowsMultipleSelection: index === null, // only allow multiple if adding new photos
+                quality: 0.5,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const selectedUris = result.assets.map(asset => asset.uri);
+                if (index !== null && index >= 0 && index < photos.length) {
+                    const updatedPhotos = [...photos];
+                    updatedPhotos[index] = selectedUris[0];
+                    setPhotos(updatedPhotos);
+                } else {
+                    const remainingSlots = 5 - photos.length;
+                    const urisToAdd = selectedUris.slice(0, remainingSlots);
+                    
+                    if (selectedUris.length > remainingSlots) {
+                        Alert.alert(
+                            "Photos Limited 📸",
+                            `Only ${remainingSlots} photos were added to respect the 5-photo limit.`
+                        );
+                    }
+                    setPhotos([...photos, ...urisToAdd]);
+                }
+            }
+        } catch (error) {
+            console.error("Error picking image:", error);
+            Alert.alert("Error", "Failed to select photo: " + error.message);
+        }
+    };
+
+    const handlePhotoSelection = async (index = null) => {
+        if (Platform.OS === 'web') {
+            await pickImageFromLibrary(index);
+        } else {
+            Alert.alert(
+                "Select Photo Source 📸",
+                "Choose how you want to add your photo:",
+                [
+                    {
+                        text: "Take Photo 📸",
+                        onPress: () => takePhoto(index),
+                    },
+                    {
+                        text: "Photo Library 🖼️",
+                        onPress: () => pickImageFromLibrary(index),
+                    },
+                    {
+                        text: "Cancel",
+                        style: "cancel",
+                    },
+                ],
+                { cancelable: true }
+            );
         }
     };
 
@@ -121,6 +273,15 @@ export default function ModalScreen() {
         const newPhotos = [...photos];
         newPhotos.splice(index, 1);
         setPhotos(newPhotos);
+
+        // Adjust active index if index deletion affects current position
+        if (activeIndex >= newPhotos.length) {
+            const newIndex = Math.max(0, newPhotos.length - 1);
+            setActiveIndex(newIndex);
+            setTimeout(() => {
+                modalScrollViewRef.current?.scrollTo({ x: newIndex * containerWidth, animated: true });
+            }, 100);
+        }
     };
 
     const handleDateChange = (event, selectedDate) => {
@@ -144,54 +305,59 @@ export default function ModalScreen() {
         setIsSaving(true);
         
         try {
-            let uploadedPhotoUrl = null;
+            const uploadedPhotoUrls = [];
 
-            // If there's a local photo selected, upload it to Supabase Storage first
-            if (photos.length > 0 && !photos[0].startsWith('http')) {
-                let uri = photos[0];
-                
-                // FORCE COMPRESSION: Resize and compress the image to guarantee small file sizes, even on Web!
-                const manipulatedImage = await ImageManipulator.manipulateAsync(
-                    uri,
-                    [{ resize: { width: 1080 } }], // Shrink to 1080p width max
-                    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG } // High-quality compression (80%) instead of aggressive crushing
-                );
-                
-                uri = manipulatedImage.uri;
-
-                const response = await fetch(uri);
-                const blob = await response.blob();
-                const fileExt = 'jpg';
-                const fileName = `review_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                
-                const { data, error } = await supabase.storage
-                    .from('review-images')
-                    .upload(fileName, blob, { contentType: `image/${fileExt}` });
+            for (const uri of photos) {
+                if (uri.startsWith('http')) {
+                    uploadedPhotoUrls.push(uri);
+                } else {
+                    let finalUri = uri;
                     
-                if (error) {
-                    throw error;
+                    try {
+                        // FORCE COMPRESSION: Resize and compress the image to guarantee small file sizes
+                        const manipulatedImage = await ImageManipulator.manipulateAsync(
+                            uri,
+                            [{ resize: { width: 1080 } }], // Shrink to 1080p width max
+                            { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG } // High-quality compression (80%)
+                        );
+                        finalUri = manipulatedImage.uri;
+                    } catch (manipulateError) {
+                        console.warn("Failed to compress image, using raw:", manipulateError);
+                    }
+
+                    const response = await fetch(finalUri);
+                    const blob = await response.blob();
+                    const fileExt = 'jpg';
+                    const fileName = `review_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    
+                    const { data, error } = await supabase.storage
+                        .from('review-images')
+                        .upload(fileName, blob, { contentType: `image/${fileExt}` });
+                        
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    // Get the public URL for the uploaded file
+                    const { data: publicData } = supabase.storage
+                        .from('review-images')
+                        .getPublicUrl(data.path);
+                        
+                    uploadedPhotoUrls.push(publicData.publicUrl);
                 }
-                
-                // Get the public URL for the uploaded file
-                const { data: publicData } = supabase.storage
-                    .from('review-images')
-                    .getPublicUrl(data.path);
-                    
-                uploadedPhotoUrl = publicData.publicUrl;
-            } else if (photos.length > 0) {
-                uploadedPhotoUrl = photos[0]; // Already a remote URL
             }
+
+            const joinedUrlsStr = uploadedPhotoUrls.join(',');
 
             const reviewData = {
                 dish_name: dish,
                 restaurant_name: restaurantName,
                 rating,
                 notes,
-                photos: uploadedPhotoUrl ? [uploadedPhotoUrl] : [],
-                photo_url: uploadedPhotoUrl,
+                photos: uploadedPhotoUrls,
+                photo_url: joinedUrlsStr,
                 price: parseFloat(price) || 0,
                 currency,
-                // date_ordered: dateOrdered.toISOString().split('T')[0], // Removed from DB schema for now
             };
 
             if (isEditing) {
@@ -310,52 +476,123 @@ export default function ModalScreen() {
                         /* Step 1: Photos only */
                         <View className="bg-gray-50 border-b border-gray-100 relative overflow-hidden" style={{ width: containerWidth, height: containerWidth }}>
                             {photos.length > 0 ? (
-                                <ScrollView 
-                                    horizontal 
-                                    pagingEnabled 
-                                    showsHorizontalScrollIndicator={false} 
-                                    showsVerticalScrollIndicator={false}
-                                    style={{ width: containerWidth, height: containerWidth }}
-                                    contentContainerStyle={{ height: containerWidth }}
-                                >
-                                    {photos.map((uri, index) => (
-                                        <View key={index} className="relative overflow-hidden" style={{ width: containerWidth, height: containerWidth }}>
-                                            <Image
-                                                source={{ uri }}
-                                                className="w-full h-full"
-                                                resizeMode="cover"
-                                            />
-                                            <Pressable
-                                                onPress={() => removePhoto(index)}
-                                                className="absolute top-4 right-4 bg-black/60 rounded-full p-2"
-                                                style={{ zIndex: 10 }}
-                                            >
-                                                <Ionicons name="close" size={16} color="white" />
-                                            </Pressable>
+                                <View className="w-full h-full relative">
+                                    <ScrollView 
+                                        ref={modalScrollViewRef}
+                                        horizontal 
+                                        pagingEnabled 
+                                        showsHorizontalScrollIndicator={false} 
+                                        showsVerticalScrollIndicator={false}
+                                        onScroll={handleModalScroll}
+                                        scrollEventThrottle={16}
+                                        style={{ width: containerWidth, height: containerWidth }}
+                                        contentContainerStyle={{ height: containerWidth }}
+                                    >
+                                        {photos.map((uri, index) => (
+                                            <View key={index} className="relative overflow-hidden" style={{ width: containerWidth, height: containerWidth }}>
+                                                <Pressable
+                                                    onPress={() => handlePhotoSelection(index)}
+                                                    className="w-full h-full"
+                                                >
+                                                    <Image
+                                                        source={{ uri }}
+                                                        className="w-full h-full"
+                                                        resizeMode="cover"
+                                                    />
+                                                </Pressable>
+                                                
+                                                {/* Replace Photo Pencil Button */}
+                                                <Pressable
+                                                    onPress={() => handlePhotoSelection(index)}
+                                                    className="absolute top-4 left-4 bg-black/60 rounded-full p-2"
+                                                    style={{ zIndex: 10 }}
+                                                >
+                                                    <Ionicons name="create-outline" size={16} color="white" />
+                                                </Pressable>
+                                                
+                                                {/* Remove Photo Close Button */}
+                                                <Pressable
+                                                    onPress={() => removePhoto(index)}
+                                                    className="absolute top-4 right-4 bg-black/60 rounded-full p-2"
+                                                    style={{ zIndex: 10 }}
+                                                >
+                                                    <Ionicons name="close" size={16} color="white" />
+                                                </Pressable>
+                                            </View>
+                                        ))}
+                                    </ScrollView>
+
+                                    {/* Active Photo Pill Indicator */}
+                                    <View 
+                                        className="absolute top-4 bg-black/60 rounded-full px-3 py-1 flex-row items-center justify-center"
+                                        style={{ 
+                                            zIndex: 30,
+                                            left: '50%',
+                                            transform: [{ translateX: -60 }]
+                                        }}
+                                    >
+                                        <Text className="text-white text-xs font-bold text-center">
+                                            {activeIndex + 1} of {photos.length} ({photos.length}/5)
+                                        </Text>
+                                    </View>
+
+                                    {/* Left Chevron Button */}
+                                    {photos.length > 1 && activeIndex > 0 && (
+                                        <Pressable
+                                            onPress={() => scrollToModalImage(activeIndex - 1)}
+                                            className="absolute left-3 top-1/2 -mt-5 bg-black/40 rounded-full p-2 items-center justify-center"
+                                            style={{ zIndex: 30 }}
+                                        >
+                                            <Ionicons name="chevron-back" size={20} color="white" />
+                                        </Pressable>
+                                    )}
+
+                                    {/* Right Chevron Button */}
+                                    {photos.length > 1 && activeIndex < photos.length - 1 && (
+                                        <Pressable
+                                            onPress={() => scrollToModalImage(activeIndex + 1)}
+                                            className="absolute right-3 top-1/2 -mt-5 bg-black/40 rounded-full p-2 items-center justify-center"
+                                            style={{ zIndex: 30 }}
+                                        >
+                                            <Ionicons name="chevron-forward" size={20} color="white" />
+                                        </Pressable>
+                                    )}
+
+                                    {/* Dot Indicators */}
+                                    {photos.length > 1 && (
+                                        <View className="absolute bottom-4 left-0 right-0 flex-row justify-center space-x-1.5" style={{ zIndex: 30 }}>
+                                            {photos.map((_, index) => (
+                                                <Pressable
+                                                    key={index}
+                                                    onPress={() => scrollToModalImage(index)}
+                                                    className={`h-2 rounded-full ${index === activeIndex ? 'w-4 bg-white' : 'w-2 bg-white/50'}`}
+                                                />
+                                            ))}
                                         </View>
-                                    ))}
-                                </ScrollView>
+                                    )}
+                                </View>
                             ) : (
                                 <Pressable
-                                    onPress={pickImage}
-                                    className="w-full h-full items-center justify-center space-y-2"
+                                    onPress={() => handlePhotoSelection()}
+                                    className="w-full h-full items-center justify-center space-y-2 px-6"
                                 >
-                                    <View className="w-16 h-16 rounded-full bg-gray-200 items-center justify-center">
+                                    <View className="w-16 h-16 rounded-full bg-gray-200 items-center justify-center mb-1">
                                         <Ionicons name="camera" size={32} color="#9CA3AF" />
                                     </View>
-                                    <Text className="text-gray-400 font-medium">Add Photos</Text>
+                                    <Text className="text-gray-700 font-bold text-lg">Max 5 photos.</Text>
+                                    <Text className="text-gray-400 text-sm text-center px-4 mt-1">Just give us the absolute chef's kiss angle. 🤌🏼</Text>
                                 </Pressable>
                             )}
 
-                            {/* Add more photos button (floating if photos exist) */}
-                            {photos.length > 0 && (
+                            {/* Add more photos button (floating if photos exist and we have less than 5 slots taken) */}
+                            {photos.length > 0 && photos.length < 5 && (
                                 <Pressable
-                                    onPress={pickImage}
+                                    onPress={() => handlePhotoSelection()}
                                     className="absolute bottom-4 right-4 bg-black/60 rounded-full py-1.5 px-3 flex-row items-center space-x-1"
-                                    style={{ zIndex: 20 }}
+                                    style={{ zIndex: 40 }}
                                 >
                                     <Ionicons name="images" size={14} color="white" />
-                                    <Text className="text-white text-xs font-bold pl-0.5">Add</Text>
+                                    <Text className="text-white text-xs font-bold pl-0.5">Add ({photos.length}/5)</Text>
                                 </Pressable>
                             )}
                         </View>
@@ -382,24 +619,65 @@ export default function ModalScreen() {
                             {/* Form Fields - Instagram Style List */}
                             <View className="px-4 py-2">
                                 {/* Dish Name */}
-                                <View className={`flex-row items-center py-4 border-b ${focusedField === 'dish' ? 'border-blue-500' : 'border-gray-100'}`}>
-                                    <View className="w-8 items-center mr-3">
-                                        <Ionicons 
-                                            name="fast-food-outline" 
-                                            size={24} 
-                                            color={focusedField === 'dish' ? '#3B82F6' : '#262626'} 
+                                <View className="z-20 relative">
+                                    <View className={`flex-row items-center py-4 border-b ${focusedField === 'dish' ? 'border-blue-500' : 'border-gray-100'}`}>
+                                        <View className="w-8 items-center mr-3">
+                                            <Ionicons 
+                                                name="fast-food-outline" 
+                                                size={24} 
+                                                color={focusedField === 'dish' ? '#3B82F6' : '#262626'} 
+                                            />
+                                        </View>
+                                        <TextInput
+                                            value={dish}
+                                            onChangeText={(text) => {
+                                                setDish(text);
+                                                setShowDishSuggestions(true);
+                                            }}
+                                            onFocus={() => {
+                                                setFocusedField('dish');
+                                                setShowDishSuggestions(true);
+                                            }}
+                                            onBlur={() => {
+                                                setFocusedField(null);
+                                                setTimeout(() => setShowDishSuggestions(false), 200);
+                                            }}
+                                            placeholder="Name of the dish..."
+                                            placeholderTextColor="#9CA3AF"
+                                            className="flex-1 text-base text-black"
+                                            style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10, outlineStyle: 'none' }}
                                         />
                                     </View>
-                                    <TextInput
-                                        value={dish}
-                                        onChangeText={setDish}
-                                        onFocus={() => setFocusedField('dish')}
-                                        onBlur={() => setFocusedField(null)}
-                                        placeholder="Name of the dish..."
-                                        placeholderTextColor="#9CA3AF"
-                                        className="flex-1 text-base text-black"
-                                        style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10, outlineStyle: 'none' }}
-                                    />
+
+                                    {/* Dish Autocomplete Suggestions */}
+                                    {showDishSuggestions && filteredDishes.length > 0 && (
+                                        <View 
+                                            className="bg-gray-50 border border-gray-300 rounded-lg absolute left-10 right-0 z-50 overflow-hidden"
+                                            style={{ top: 60, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 }}
+                                        >
+                                            <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 150 }}>
+                                                {filteredDishes.map((item, index) => (
+                                                    <Pressable 
+                                                        key={index} 
+                                                        className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredDishes.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                        onPressIn={() => {
+                                                            setDish(item);
+                                                            setShowDishSuggestions(false);
+                                                        }}
+                                                        onPress={() => {
+                                                            setDish(item);
+                                                            setShowDishSuggestions(false);
+                                                        }}
+                                                    >
+                                                        <View className="mr-3">
+                                                            <Ionicons name="search-outline" size={18} color="#6B7280" />
+                                                        </View>
+                                                        <Text className="text-base text-gray-800 font-medium flex-1" numberOfLines={1}>{item}</Text>
+                                                    </Pressable>
+                                                ))}
+                                            </ScrollView>
+                                        </View>
+                                    )}
                                 </View>
 
                                 {/* Restaurant */}
@@ -444,6 +722,10 @@ export default function ModalScreen() {
                                                     <Pressable 
                                                         key={index} 
                                                         className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredRestaurants.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                        onPressIn={() => {
+                                                            setRestaurantName(place);
+                                                            setShowSuggestions(false);
+                                                        }}
                                                         onPress={() => {
                                                             setRestaurantName(place);
                                                             setShowSuggestions(false);
@@ -557,6 +839,7 @@ export default function ModalScreen() {
                                         rating: rating,
                                         notes: notes,
                                         photo_url: photos[0],
+                                        photos: photos,
                                         price: parseFloat(price) || 0,
                                         currency: currency,
                                         created_at: new Date().toISOString(),

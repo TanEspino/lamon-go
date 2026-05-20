@@ -78,26 +78,28 @@ export default function DiscoverScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-white">
-            <SearchBarHeader
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                ratingFilter={ratingFilter}
-                setRatingFilter={setRatingFilter}
-                searchType={searchType}
-                setSearchType={setSearchType}
-            />
-            <FlatList
-                data={filteredReviews}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <ReviewCard
-                        review={item}
-                        onRestaurantPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant_id || 'mock', name: item.restaurant_name } })}
-                    />
-                )}
-                ListEmptyComponent={isEmpty ? renderInitialState : renderNoResultsState}
-                contentContainerStyle={{ paddingBottom: 100 }}
-            />
+            <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }}>
+                <SearchBarHeader
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    ratingFilter={ratingFilter}
+                    setRatingFilter={setRatingFilter}
+                    searchType={searchType}
+                    setSearchType={setSearchType}
+                />
+                <FlatList
+                    data={filteredReviews}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <ReviewCard
+                            review={item}
+                            onRestaurantPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant_id || 'mock', name: item.restaurant_name } })}
+                        />
+                    )}
+                    ListEmptyComponent={isEmpty ? renderInitialState : renderNoResultsState}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                />
+            </View>
         </SafeAreaView>
     );
 }

@@ -25,10 +25,10 @@ export default function FeedScreen() {
     return (
         <SafeAreaView className="flex-1 bg-background">
             {/* Custom Logo Header */}
-            <View className="items-center justify-center py-3 bg-gray-100 border-b border-gray-200">
+            <View className="items-center justify-center bg-gray-100 border-b border-gray-200" style={{ height: 60, width: '100%' }}>
                 <Image
                     source={require('../../assets/logo_profile.png')}
-                    style={{ width: 150, height: 45 }}
+                    style={{ width: 140, height: 40 }}
                     resizeMode="contain"
                 />
             </View>
@@ -77,7 +77,15 @@ export default function FeedScreen() {
                         </TouchableOpacity>
                     </View>
                 )}
-                contentContainerStyle={myReviews.length === 0 ? { flexGrow: 1, paddingBottom: 100 } : { paddingBottom: 100 }}
+                contentContainerStyle={[
+                    myReviews.length === 0 ? { flexGrow: 1 } : {},
+                    { 
+                        paddingBottom: 100, 
+                        width: '100%', 
+                        maxWidth: 600, 
+                        alignSelf: 'center' 
+                    }
+                ]}
                 showsVerticalScrollIndicator={false}
                 onScroll={(e) => {
                     const offsetY = e.nativeEvent.contentOffset.y;
@@ -95,6 +103,24 @@ export default function FeedScreen() {
                     activeOpacity={0.8}
                 >
                     <Ionicons name="arrow-up" size={24} color="white" />
+                </TouchableOpacity>
+            )}
+            {/* Mobile Floating Action Button (FAB) - Visible only on mobile screens */}
+            {!isLargeScreen && (
+                <TouchableOpacity 
+                    onPress={() => router.push('/modal')}
+                    className="absolute bottom-6 right-6 bg-[#E11D48] w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                    style={{ 
+                        elevation: 6,
+                        shadowColor: '#E11D48',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 6,
+                        zIndex: 999
+                    }}
+                    activeOpacity={0.85}
+                >
+                    <Ionicons name="add" size={28} color="white" />
                 </TouchableOpacity>
             )}
         </SafeAreaView >

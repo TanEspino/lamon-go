@@ -45,10 +45,10 @@ export default function TabLayout() {
                         <TouchableOpacity 
                             onPress={() => router.push('/discover')}
                             className="p-2.5 rounded-2xl items-center justify-center"
-                            style={{ backgroundColor: isActive('discover') ? '#F0FDFA' : 'transparent' }}
+                            style={{ backgroundColor: isActive('discover') ? '#FFF1F2' : 'transparent' }}
                             activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#40E0D0" : "#737373"} />
+                            <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#E11D48" : "#737373"} />
                         </TouchableOpacity>
 
                         {/* Add Post Button */}
@@ -162,24 +162,7 @@ export default function TabLayout() {
                     <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarLabel: 'Profile' }} />
                 </Tabs>
 
-                {/* Mobile Floating Action Button (FAB) - Visible only on mobile screens */}
-                {!isLargeScreen && (
-                    <TouchableOpacity 
-                        onPress={() => router.push('/modal')}
-                        className="absolute bottom-20 right-6 bg-[#E11D48] w-14 h-14 rounded-full items-center justify-center shadow-lg"
-                        style={{ 
-                            elevation: 6,
-                            shadowColor: '#E11D48',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 6,
-                            zIndex: 999
-                        }}
-                        activeOpacity={0.85}
-                    >
-                        <Ionicons name="add" size={28} color="white" />
-                    </TouchableOpacity>
-                )}
+
             </View>
         </View>
     );

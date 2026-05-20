@@ -1,9 +1,51 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useState, useRef, useEffect } from 'react';
 
 export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestaurantPress }) {
     const { user } = useAuth();
+    const { width: windowWidth } = useWindowDimensions();
+
+    // Responsive card width computation for immediate correct sizing
+    const fallbackWidth = Math.min(windowWidth, 600) - 32;
+    const [cardWidth, setCardWidth] = useState(fallbackWidth);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const scrollViewRef = useRef(null);
+
+    // Sync card width if screen layout changes
+    useEffect(() => {
+        setCardWidth(fallbackWidth);
+    }, [windowWidth]);
+
+    const photos = Array.isArray(review.photos) 
+        ? review.photos 
+        : (review.photo_url 
+            ? String(review.photo_url).split(',').map(u => u.trim()).filter(Boolean) 
+            : []);
+
+    const handleScroll = (event) => {
+        const contentOffset = event.nativeEvent.contentOffset.x;
+        const viewSize = event.nativeEvent.layoutMeasurement.width;
+        if (viewSize > 0) {
+            const index = Math.round(contentOffset / viewSize);
+            setActiveIndex(index);
+        }
+    };
+
+    const handleLayout = (event) => {
+        const layoutWidth = event.nativeEvent.layout.width;
+        if (layoutWidth > 0) {
+            setCardWidth(layoutWidth);
+        }
+    };
+
+    const scrollToImage = (index) => {
+        if (index >= 0 && index < photos.length && cardWidth > 0) {
+            scrollViewRef.current?.scrollTo({ x: index * cardWidth, animated: true });
+            setActiveIndex(index);
+        }
+    };
 
     // Format the date nicely
     const dateString = new Date(review.created_at || Date.now()).toLocaleDateString(undefined, {
@@ -54,22 +96,85 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
 
             {/* Hero Image - Polaroid Style */}
             <View className="px-4">
-                <View className="rounded-3xl overflow-hidden bg-gray-100 shadow-sm relative w-full aspect-[4/5]">
-                    <Image
-                        source={{ uri: review.photo_url || 'https://placehold.co/600x800/png?text=Food' }}
-                        className="w-full h-full"
-                        resizeMode="cover"
-                    />
+                <View 
+                    onLayout={handleLayout}
+                    className="rounded-3xl overflow-hidden bg-gray-100 shadow-sm relative w-full aspect-[4/5]"
+                >
+                    {photos.length > 0 ? (
+                        <View className="w-full h-full relative">
+                            <ScrollView
+                                ref={scrollViewRef}
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                showsVerticalScrollIndicator={false}
+                                onScroll={handleScroll}
+                                scrollEventThrottle={16}
+                                style={{ width: '100%', height: '100%' }}
+                            >
+                                {photos.map((uri, index) => (
+                                    <View key={index} style={{ width: cardWidth || 300, height: '100%' }}>
+                                        <Image
+                                            source={{ uri }}
+                                            className="w-full h-full"
+                                            resizeMode="cover"
+                                        />
+                                    </View>
+                                ))}
+                            </ScrollView>
+
+                            {/* Left Chevron Button */}
+                            {photos.length > 1 && activeIndex > 0 && (
+                                <Pressable
+                                    onPress={() => scrollToImage(activeIndex - 1)}
+                                    className="absolute left-3 top-1/2 -mt-5 bg-black/40 rounded-full p-2 items-center justify-center"
+                                    style={{ zIndex: 10 }}
+                                >
+                                    <Ionicons name="chevron-back" size={20} color="white" />
+                                </Pressable>
+                            )}
+
+                            {/* Right Chevron Button */}
+                            {photos.length > 1 && activeIndex < photos.length - 1 && (
+                                <Pressable
+                                    onPress={() => scrollToImage(activeIndex + 1)}
+                                    className="absolute right-3 top-1/2 -mt-5 bg-black/40 rounded-full p-2 items-center justify-center"
+                                    style={{ zIndex: 10 }}
+                                >
+                                    <Ionicons name="chevron-forward" size={20} color="white" />
+                                </Pressable>
+                            )}
+
+                            {/* Dot Indicators */}
+                            {photos.length > 1 && (
+                                <View className="absolute bottom-12 left-0 right-0 flex-row justify-center space-x-1.5" style={{ zIndex: 10 }}>
+                                    {photos.map((_, index) => (
+                                        <Pressable
+                                            key={index}
+                                            onPress={() => scrollToImage(index)}
+                                            className={`h-2 rounded-full ${index === activeIndex ? 'w-4 bg-white' : 'w-2 bg-white/50'}`}
+                                        />
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+                    ) : (
+                        <Image
+                            source={{ uri: 'https://placehold.co/600x800/png?text=Food' }}
+                            className="w-full h-full"
+                            resizeMode="cover"
+                        />
+                    )}
 
                     {/* Rating Tag */}
-                    <View className="absolute bottom-3 left-3 bg-gray-900/90 px-3 py-1.5 rounded-full flex-row items-center shadow-md">
+                    <View className="absolute bottom-3 left-3 bg-gray-900/90 px-3 py-1.5 rounded-full flex-row items-center shadow-md" style={{ zIndex: 20 }}>
                         <Ionicons name="star" size={12} color="white" style={{ marginRight: 2 }} />
                         <Text className="font-extrabold text-xs text-white">{review.rating}.0</Text>
                     </View>
 
                     {/* Price Tag */}
                     {review.price && (
-                        <View className="absolute bottom-3 right-3 bg-[#E11D48] px-3 py-1.5 rounded-full shadow-md">
+                        <View className="absolute bottom-3 right-3 bg-[#E11D48] px-3 py-1.5 rounded-full shadow-md" style={{ zIndex: 20 }}>
                             <Text className="font-extrabold text-xs text-white">
                                 {review.currency || 'PHP'} {parseFloat(review.price).toFixed(2)}
                             </Text>
