@@ -144,7 +144,7 @@ export default function ProfileScreen() {
     if (!profile) return null; // Or loading spinner
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
+        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
             <Stack.Screen
                 options={{
                     title: profile.username || 'Profile',
@@ -218,7 +218,7 @@ export default function ProfileScreen() {
                                     ) : null}
                                 </View>
                             </View>
-
+  
                             {/* Stats Row */}
                             <View className="flex-row justify-between items-center mb-4 px-2">
                                 {/* Reviews Widget */}
@@ -242,7 +242,7 @@ export default function ProfileScreen() {
                                     <Text className="text-gray-500 dark:text-zinc-400 text-[9px] font-bold uppercase tracking-wider">Places</Text>
                                 </View>
                             </View>
-
+  
                             {/* Edit Profile Action Button */}
                             <TouchableOpacity 
                                 onPress={() => router.push('/onboarding')}
@@ -253,23 +253,23 @@ export default function ProfileScreen() {
                                 <Text className="font-bold text-gray-900 dark:text-white text-sm">Edit Profile</Text>
                             </TouchableOpacity>
                         </View>
-
+ 
                         {/* Action buttons removed - Edit is now in the top right header */}
                         
                         {/* View Mode Toggle (Differentiated from IG) */}
-                        <View className="flex-row justify-center mt-3 bg-gray-200 dark:bg-zinc-800 mx-5 rounded-xl p-1 mb-2">
+                        <View className="flex-row justify-center mt-3 bg-gray-200 dark:bg-zinc-900 mx-5 rounded-xl p-1 mb-2">
                             <TouchableOpacity
-                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-900 shadow-sm' : ''}`}
+                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-800 shadow-sm' : ''}`}
                                 onPress={() => setViewMode('grid')}
                             >
-                                <Ionicons name="apps-outline" size={16} color={viewMode === 'grid' ? (isDark ? 'white' : 'black') : '#6B7280'} style={{ marginRight: 6 }} />
+                                <Ionicons name="apps-outline" size={16} color={viewMode === 'grid' ? (isDark ? 'white' : 'black') : (isDark ? '#A3A3A3' : '#6B7280')} style={{ marginRight: 6 }} />
                                 <Text className={`font-semibold text-sm ${viewMode === 'grid' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>Gallery</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'list' ? 'bg-white dark:bg-zinc-900 shadow-sm' : ''}`}
+                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'list' ? 'bg-white dark:bg-zinc-800 shadow-sm' : ''}`}
                                 onPress={() => setViewMode('list')}
                             >
-                                <Ionicons name="reader-outline" size={16} color={viewMode === 'list' ? (isDark ? 'white' : 'black') : '#6B7280'} style={{ marginRight: 6 }} />
+                                <Ionicons name="reader-outline" size={16} color={viewMode === 'list' ? (isDark ? 'white' : 'black') : (isDark ? '#A3A3A3' : '#6B7280')} style={{ marginRight: 6 }} />
                                 <Text className={`font-semibold text-sm ${viewMode === 'list' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>Reviews</Text>
                             </TouchableOpacity>
                         </View>

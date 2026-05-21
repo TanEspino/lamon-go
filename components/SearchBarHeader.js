@@ -25,7 +25,7 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
     return (
         <View className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 z-50">
             {/* Custom Logo Header */}
-            <View className="items-center justify-center bg-gray-100 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
+            <View className="items-center justify-center bg-gray-100 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
                 <Image
                     source={isDark ? require('../assets/logo_profile_dark.png') : require('../assets/logo_profile.png')}
                     style={{ width: 140, height: 40 }}
@@ -35,16 +35,16 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
             {/* Search Controls Container with its own padding */}
             <View className="px-4 pb-3 pt-2">
                 {/* Search Type Toggle */}
-            <View className="flex-row mb-3 bg-gray-200 dark:bg-zinc-800 p-1 rounded-xl">
+            <View className="flex-row mb-3 bg-gray-200 dark:bg-zinc-900 p-1 rounded-xl">
                 <TouchableOpacity
                     onPress={() => setSearchType('dish')}
-                    className={`flex-1 py-1.5 rounded-lg items-center ${searchType === 'dish' ? 'bg-white dark:bg-zinc-700' : ''}`}
+                    className={`flex-1 py-1.5 rounded-lg items-center ${searchType === 'dish' ? 'bg-white dark:bg-zinc-800' : ''}`}
                 >
                     <Text className={`font-semibold ${searchType === 'dish' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>Dish Name</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => setSearchType('restaurant')}
-                    className={`flex-1 py-1.5 rounded-lg items-center ${searchType === 'restaurant' ? 'bg-white dark:bg-zinc-700' : ''}`}
+                    className={`flex-1 py-1.5 rounded-lg items-center ${searchType === 'restaurant' ? 'bg-white dark:bg-zinc-800' : ''}`}
                 >
                     <Text className={`font-semibold ${searchType === 'restaurant' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>Restaurant</Text>
                 </TouchableOpacity>

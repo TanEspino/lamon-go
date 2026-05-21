@@ -15,7 +15,7 @@ export default function TabLayout() {
     const isLargeScreen = width >= 600;
 
     const activeColor = '#E11D48';
-    const inactiveColor = isDark ? '#A3A3A3' : '#737373'; // Neutral gray
+    const inactiveColor = isDark ? '#A3A3A3' : '#737373'; // Dynamic contrast depending on dark mode
 
     const isActive = (route) => {
         if (route === 'index') return pathname === '/' || pathname === '/index';
@@ -28,7 +28,7 @@ export default function TabLayout() {
         <View className="flex-1 flex-row bg-background dark:bg-zinc-950">
             {/* Left Vertical Sidebar (Visible only on large screens) */}
             {isLargeScreen && (
-                <View className="w-12 bg-gray-100 dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 flex-col items-center py-6 justify-between" style={{ height: '100%' }}>
+                <View className="w-12 bg-gray-50 dark:bg-[#09090B] border-r border-gray-200 dark:border-zinc-800 flex-col items-center py-6 justify-between" style={{ height: '100%' }}>
                     {/* Top Section: Spacer */}
                     <View style={{ height: 10 }} />
 
@@ -41,7 +41,7 @@ export default function TabLayout() {
                              style={{ backgroundColor: isActive('index') ? (isDark ? 'rgba(225, 29, 72, 0.15)' : '#FFF1F2') : 'transparent' }}
                              activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name={isActive('index') ? "home" : "home-outline"} color={isActive('index') ? "#E11D48" : "#737373"} />
+                            <Ionicons size={24} name={isActive('index') ? "home" : "home-outline"} color={isActive('index') ? "#E11D48" : inactiveColor} />
                         </TouchableOpacity>
 
                         {/* Discover Tab */}
@@ -51,7 +51,7 @@ export default function TabLayout() {
                             style={{ backgroundColor: isActive('discover') ? (isDark ? 'rgba(225, 29, 72, 0.15)' : '#FFF1F2') : 'transparent' }}
                             activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#E11D48" : (isDark ? "#A3A3A3" : "#737373")} />
+                            <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#E11D48" : inactiveColor} />
                         </TouchableOpacity>
 
                         {/* Add Post Button */}
@@ -60,7 +60,7 @@ export default function TabLayout() {
                             className="p-2.5 rounded-2xl items-center justify-center"
                             activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name="add-circle-outline" color={isDark ? "#A3A3A3" : "#737373"} />
+                            <Ionicons size={24} name="add-circle-outline" color={inactiveColor} />
                         </TouchableOpacity>
 
                         {/* Profile Tab */}
@@ -82,7 +82,7 @@ export default function TabLayout() {
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : (isDark ? "#A3A3A3" : "#737373")} />
+                                  <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : inactiveColor} />
                             )}
                         </TouchableOpacity>
                     </View>
@@ -93,7 +93,7 @@ export default function TabLayout() {
             )}
 
             {/* Right Side Screen Content Area */}
-            <View className="flex-1 relative bg-white dark:bg-zinc-900">
+            <View className="flex-1 relative bg-white dark:bg-zinc-950">
                 <Tabs
                     screenOptions={({ route }) => ({
                         headerShown: false,

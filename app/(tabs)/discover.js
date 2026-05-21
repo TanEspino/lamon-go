@@ -54,7 +54,7 @@ export default function DiscoverScreen() {
     }, [reviews, user, searchQuery, ratingFilter, searchType]);
 
     const renderInitialState = () => (
-        <View className="flex-1 items-center justify-center py-20 px-8 bg-white dark:bg-zinc-900">
+        <View className="flex-1 items-center justify-center py-20 px-8 bg-white dark:bg-zinc-950">
             <View className="bg-teal-50 dark:bg-zinc-800 p-6 rounded-full mb-4">
                 <Ionicons name="compass-outline" size={64} color="#40E0D0" />
             </View>
@@ -66,7 +66,7 @@ export default function DiscoverScreen() {
     );
 
     const renderNoResultsState = () => (
-        <View className="flex-1 items-center justify-center py-20 px-8 bg-white dark:bg-zinc-900">
+        <View className="flex-1 items-center justify-center py-20 px-8 bg-white dark:bg-zinc-950">
             <View className="bg-gray-50 dark:bg-zinc-800 p-6 rounded-full mb-4">
                 <Ionicons name="search-outline" size={48} color={isDark ? '#71717A' : '#9CA3AF'} />
             </View>
@@ -81,8 +81,8 @@ export default function DiscoverScreen() {
     const isEmpty = (!searchQuery && ratingFilter === null);
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
-            <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }} className="bg-white dark:bg-zinc-900">
+        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+            <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }} className="bg-white dark:bg-zinc-950">
                 <SearchBarHeader
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
