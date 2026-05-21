@@ -38,7 +38,7 @@ export default function TabLayout() {
                         <TouchableOpacity 
                              onPress={() => router.push('/')}
                              className="p-2.5 rounded-2xl items-center justify-center"
-                             style={{ backgroundColor: isActive('index') ? (isDark ? '#4C0519' : '#FFF1F2') : 'transparent' }}
+                             style={{ backgroundColor: isActive('index') ? (isDark ? 'rgba(225, 29, 72, 0.15)' : '#FFF1F2') : 'transparent' }}
                              activeOpacity={0.7}
                         >
                             <Ionicons size={24} name={isActive('index') ? "home" : "home-outline"} color={isActive('index') ? "#E11D48" : "#737373"} />
@@ -48,7 +48,7 @@ export default function TabLayout() {
                         <TouchableOpacity 
                             onPress={() => router.push('/discover')}
                             className="p-2.5 rounded-2xl items-center justify-center"
-                            style={{ backgroundColor: isActive('discover') ? (isDark ? '#4C0519' : '#FFF1F2') : 'transparent' }}
+                            style={{ backgroundColor: isActive('discover') ? (isDark ? 'rgba(225, 29, 72, 0.15)' : '#FFF1F2') : 'transparent' }}
                             activeOpacity={0.7}
                         >
                             <Ionicons size={24} name={isActive('discover') ? "compass" : "compass-outline"} color={isActive('discover') ? "#E11D48" : (isDark ? "#A3A3A3" : "#737373")} />

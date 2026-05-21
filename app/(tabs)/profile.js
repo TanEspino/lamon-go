@@ -120,7 +120,7 @@ export default function ProfileScreen() {
                                 setViewMode('list');
                             }}
                             activeOpacity={0.8}
-                            className="border-r border-b border-white dark:border-zinc-900 relative"
+                            className="border-r border-b border-gray-200 dark:border-zinc-900 relative"
                             style={{ width: itemSize, height: itemSize }}
                         >
                             <Image
@@ -290,7 +290,7 @@ export default function ProfileScreen() {
                         />
                         
                         {/* Clean, Subtle Grey Message */}
-                        <Text className="text-base font-bold tracking-tight text-neutral-400 text-center mb-6">
+                        <Text className="text-base font-bold tracking-tight text-neutral-500 dark:text-zinc-400 text-center mb-6">
                             Ready for the first bite?
                         </Text>
                         
@@ -337,7 +337,7 @@ export default function ProfileScreen() {
                     style={{ elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 }}
                     activeOpacity={0.8}
                 >
-                    <Ionicons name="arrow-up" size={24} color="white" />
+                    <Ionicons name="arrow-up" size={24} color="black" />
                 </TouchableOpacity>
             )}
             </View>

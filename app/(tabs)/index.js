@@ -57,7 +57,7 @@ export default function FeedScreen() {
                         />
                         
                         {/* Clean, Subtle Grey Message */}
-                        <Text className="text-base font-bold tracking-tight text-neutral-400 text-center mb-6">
+                        <Text className="text-base font-bold tracking-tight text-neutral-500 dark:text-zinc-400 text-center mb-6">
                             Ready for the first bite?
                         </Text>
                         
@@ -106,7 +106,7 @@ export default function FeedScreen() {
                     style={{ elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 }}
                     activeOpacity={0.8}
                 >
-                    <Ionicons name="arrow-up" size={24} color="white" />
+                    <Ionicons name="arrow-up" size={24} color="black" />
                 </TouchableOpacity>
             )}
             {/* Mobile Floating Action Button (FAB) - Visible only on mobile screens */}

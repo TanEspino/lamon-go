@@ -4,11 +4,14 @@ import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { useColorScheme } from 'nativewind';
 
 WebBrowser.maybeCompleteAuthSession(); // Handle redirect on web
 
 export default function SignInScreen() {
     const [loading, setLoading] = useState(false);
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     // Listen for the deep link return from native Safari
     useEffect(() => {
@@ -104,31 +107,31 @@ export default function SignInScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-gray-100 justify-center px-8"
+            className="flex-1 bg-gray-100 dark:bg-zinc-950 justify-center px-8"
         >
             <View className="items-center mb-16">
                 <Image 
-                    source={require('../../assets/logo_profile.png')} 
+                    source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')} 
                     style={{ width: 280, height: 80 }} 
                     resizeMode="contain" 
                 />
-                <Text className="text-gray-500 mt-2 italic text-lg">Gotta eat 'em all</Text>
+                <Text className="text-gray-500 dark:text-zinc-400 mt-2 italic text-lg">Gotta eat 'em all</Text>
             </View>
 
             <View className="space-y-4">
                 <TouchableOpacity
                     onPress={() => handleOAuth('google')}
-                    className="flex-row items-center justify-center bg-white border border-gray-200 p-4 rounded-xl space-x-3 shadow-sm"
+                    className="flex-row items-center justify-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl space-x-3 shadow-sm"
                 >
                     <Ionicons name="logo-google" size={24} color="#DB4437" />
-                    <Text className="font-semibold text-gray-700 text-lg">Continue with Google</Text>
+                    <Text className="font-semibold text-gray-700 dark:text-zinc-100 text-lg">Continue with Google</Text>
                 </TouchableOpacity>
 
 
             </View>
 
             <View className="mt-12 items-center">
-                <Text className="text-xs text-center text-gray-400">
+                <Text className="text-xs text-center text-gray-400 dark:text-zinc-500">
                     By continuing, you agree to our Terms of Service and Privacy Policy.
                 </Text>
             </View>

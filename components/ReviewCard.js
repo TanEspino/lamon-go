@@ -197,7 +197,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                 )}
 
                 {/* Date */}
-                <Text className="text-gray-400 dark:text-zinc-500 text-xs font-semibold uppercase tracking-widest mt-0">
+                <Text className="text-gray-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-widest mt-0">
                     {dateString}
                 </Text>
             </View>
