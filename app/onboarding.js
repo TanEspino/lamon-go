@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useColorScheme } from 'nativewind';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function OnboardingScreen() {
     const { updateProfileLocal, profile, user, fetchProfile } = useAuth();
@@ -264,6 +265,37 @@ export default function OnboardingScreen() {
                                 trackColor={{ false: '#D1D5DB', true: '#E11D48' }}
                                 thumbColor={isDark ? '#FFFFFF' : '#F3F4F6'}
                             />
+                        </View>
+
+                        {/* Legal Links Section */}
+                        <View className="mt-8 border-t border-gray-100 dark:border-zinc-800 pt-5">
+                            <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-1">
+                                Legal & Documents
+                            </Text>
+                            
+                            {/* Terms of Service Link */}
+                            <Pressable 
+                                onPress={() => router.push('/terms-of-service')}
+                                className="py-3.5 border-b border-gray-100 dark:border-zinc-800 flex-row items-center justify-between px-1"
+                            >
+                                <View className="flex-row items-center">
+                                    <Ionicons name="document-text-outline" size={20} color={isDark ? "#A3A3A3" : "#262626"} style={{ marginRight: 12 }} />
+                                    <Text className="text-base font-semibold text-black dark:text-white">Terms of Service</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color={isDark ? "#71717A" : "#9CA3AF"} />
+                            </Pressable>
+
+                            {/* Privacy Policy Link */}
+                            <Pressable 
+                                onPress={() => router.push('/privacy-policy')}
+                                className="py-3.5 border-b border-gray-100 dark:border-zinc-800 flex-row items-center justify-between px-1"
+                            >
+                                <View className="flex-row items-center">
+                                    <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? "#A3A3A3" : "#262626"} style={{ marginRight: 12 }} />
+                                    <Text className="text-base font-semibold text-black dark:text-white">Privacy Policy</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color={isDark ? "#71717A" : "#9CA3AF"} />
+                            </Pressable>
                         </View>
                     </View>
                 </ScrollView>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - LamonGo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 {
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 10px;
+            color: #111;
+        }
+        h2 {
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 8px;
+            color: #222;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #444;
+            margin-top: 20px;
+        }
+        p, li {
+            font-size: 16px;
+            color: #4a4a4a;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Terms of Service for LamonGo</h1>
+    <p>Last updated: May 22, 2026</p>
+    <p>Please read these Terms of Service ("Terms", "Terms of Service") carefully before downloading, installing, or using the LamonGo mobile application (the "Application", "Service") operated by Tomokan Labs.</p>
+    <p>Your access to and use of the Service is conditioned on Your acceptance of and compliance with these Terms. These Terms apply to all visitors, users, and others who download, install, or use the Application.</p>
+    <p>By accessing or using the Service, You agree to be bound by these Terms. If You disagree with any part of the terms, then You may not install or utilize the Application.</p>
+
+    <h2>Interpretation and Definitions</h2>
+    <h3>Definitions</h3>
+    <p>For the purposes of these Terms of Service:</p>
+    <ul>
+        <li><strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to Tomokan Labs.</li>
+        <li><strong>Country</strong> refers to: Philippines</li>
+        <li><strong>Application</strong> (or "App") refers to LamonGo, the software program provided by the Company downloaded and installed by You on any mobile or electronic device.</li>
+        <li><strong>Service</strong> refers to the mobile Application.</li>
+        <li><strong>You</strong> means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.</li>
+    </ul>
+
+    <h2>User Accounts & Mobile Authentication</h2>
+    <p>When You create an account or authenticate within the Application (including logging in securely via third-party systems like Google OAuth), You agree to provide profile information that is accurate and current. Failure to do so constitutes a breach of the Terms, which may result in immediate termination or locking of Your account profile inside the Application.</p>
+    <p>You are solely responsible for safeguarding the mobile credentials, device authorization states, or session tokens used to access the platform, and for any activities or actions taking place under your profile layout.</p>
+
+    <h2>Mobile Application License</h2>
+    <p>Subject to Your compliance with these Terms, the Company grants You a limited, non-exclusive, non-transferable, revocable license to download, install, and use a single copy of the LamonGo Application on a mobile device owned or controlled by You, strictly in accordance with your smartphone's operating system guidelines and marketplace platform rules.</p>
+    <p>You agree not to modify, decompile, reverse engineer, or attempt to extract the underlying source code of the Application, unless expressly permitted by applicable local laws.</p>
+
+    <h2>Intellectual Property</h2>
+    <p>The Application and its original source code, operational workflows, brand layouts, assets, interface designs, and features are and will remain the exclusive property of Tomokan Labs. The Service is protected by both local and international copyright, trademark, and intellectual property laws.</p>
+
+    <h2>Termination</h2>
+    <p>We may terminate or suspend Your account profile or restrict access to the mobile Application immediately, without prior notice or liability, for any reason whatsoever, including without limitation if You breach these Terms. Upon termination, Your right to use the Service will cease immediately, and you must remove the Application from your mobile device.</p>
+
+    <h2>Limitation Of Liability</h2>
+    <p>To the maximum extent permitted by applicable law, in no event shall Tomokan Labs or its core data providers be liable for any special, incidental, indirect, or consequential damages whatsoever (including, but not limited to, damages for loss of profits, device crashes, memory corruption, cellular network downtime, or system interruption) arising out of or in any way related to the use of or inability to use the Application.</p>
+
+    <h2>"AS IS" and "AS AVAILABLE" Disclaimer</h2>
+    <p>The Application is provided to You "AS IS" and "AS AVAILABLE" and with all faults and defects without warranty of any kind. To the maximum extent permitted under applicable law, the Company expressly disclaims all warranties, whether express, implied, or statutory, with respect to the Application, including all implied warranties of merchantability, fitness for a particular application purpose, performance stability, and non-infringement.</p>
+
+    <h2>Governing Law</h2>
+    <p>The laws of the Country, excluding its conflicts of law rules, shall govern these Terms and Your use of the Application. Your mobile use may also be subject to other local, regional, or international frameworks.</p>
+
+    <h2>Changes to These Terms</h2>
+    <p>We reserve the right, at Our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will update the "Last updated" date at the top of this page or push an explicit client notification banner directly within the mobile application interface. By continuing to use our platform after revisions take effect, you agree to be bound by the updated conditions.</p>
+
+    <h2>Contact Us</h2>
+    <p>If you have any questions about these Terms of Service, You can contact us:</p>
+    <ul>
+        <li>By email: contact@tomokanlabs.com</li>
+        <li>By visiting the parent website: <a href="https://www.tomokanlabs.com/" rel="external nofollow noopener" target="_blank">https://www.tomokanlabs.com/</a></li>
+    </ul>
+
+</body>
+</html>
