@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { useColorScheme } from 'nativewind';
+import { useRouter, Link } from 'expo-router';
 
 WebBrowser.maybeCompleteAuthSession(); // Handle redirect on web
 
 export default function SignInScreen() {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -130,9 +132,25 @@ export default function SignInScreen() {
 
             </View>
 
-            <View className="mt-12 items-center">
-                <Text className="text-xs text-center text-gray-400 dark:text-zinc-500">
-                    By continuing, you agree to our Terms of Service and Privacy Policy.
+            <View className="mt-12 flex-row flex-wrap justify-center items-center px-4">
+                <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
+                    By continuing, you agree to our{' '}
+                </Text>
+                <Link href="/terms-of-service">
+                    <Text className="text-xs font-bold text-primary underline leading-5">
+                        Terms of Service
+                    </Text>
+                </Link>
+                <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
+                    {' '}and{' '}
+                </Text>
+                <Link href="/privacy-policy">
+                    <Text className="text-xs font-bold text-primary underline leading-5">
+                        Privacy Policy
+                    </Text>
+                </Link>
+                <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
+                    .
                 </Text>
             </View>
         </KeyboardAvoidingView>

@@ -70,11 +70,12 @@ export const AuthProvider = ({ children }) => {
 
         const inAuthGroup = segments[0] === '(auth)';
         const inOnboarding = segments[0] === 'onboarding';
+        const isPublicRoute = segments[0] === 'privacy-policy' || segments[0] === 'terms-of-service';
 
-        if (!user && !inAuthGroup) {
+        if (!user && !inAuthGroup && !isPublicRoute) {
             // Not logged in -> go to sign in
             router.replace('/(auth)/sign-in');
-        } else if (user) {
+        } else if (user && !isPublicRoute) {
             // Determine if the user is fresh without a username setup
             const isFreshUser = profile && !profile.username;
             

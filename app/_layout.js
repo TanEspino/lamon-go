@@ -65,6 +65,8 @@ export default function RootLayout() {
                 <Stack.Screen name="onboarding" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'transparentModal', headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
                 <Stack.Screen name="restaurant/[id]" options={{ presentation: 'card', headerShown: false }} />
+                <Stack.Screen name="privacy-policy" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="terms-of-service" options={{ presentation: 'modal', headerShown: false }} />
               </Stack>
             </ReviewsProvider>
           </AuthProvider>
