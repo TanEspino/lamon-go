@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,12 @@ export default function SignInScreen() {
     const [loading, setLoading] = useState(false);
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+
+    // Custom Email Auth Form States
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showEmailForm, setShowEmailForm] = useState(false);
+    const [isSignUp, setIsSignUp] = useState(false);
 
     // Listen for the deep link return from native Safari
     useEffect(() => {
@@ -106,53 +112,275 @@ export default function SignInScreen() {
         return results ? decodeURIComponent(results[1]) : null;
     };
 
+    const handleDemoLogin = async () => {
+        setLoading(true);
+        try {
+            console.log("Attempting Anonymous Developer Sign-In...");
+            // 1. Try to sign in anonymously (bypasses all email rate limits, TLD rules, and confirmations)
+            const { data, error } = await supabase.auth.signInAnonymously({
+                options: {
+                    data: {
+                        full_name: 'Lamon Go Guest',
+                        avatar_url: 'https://placehold.co/100x100/png?text=Guest'
+                    }
+                }
+            });
+
+            // 2. If anonymous login is disabled in Supabase, fall back to the test email/password
+            if (error) {
+                console.warn("Anonymous Sign-In disabled or failed. Falling back to email/password...", error.message);
+                
+                const demoEmail = 'tester@example.com';
+                const demoPassword = 'Password123!';
+                
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                    email: demoEmail,
+                    password: demoPassword,
+                });
+                
+                if (signInError) throw signInError;
+            }
+
+            console.log("Demo Login Successful!");
+        } catch (error) {
+            console.error("Demo Login Error:", error);
+            const isRateOrConfirmError = error.message?.toLowerCase().includes('rate') || 
+                                         error.message?.toLowerCase().includes('exceeded') ||
+                                         error.message?.toLowerCase().includes('confirm') ||
+                                         error.message?.toLowerCase().includes('verified');
+
+            Alert.alert(
+                "Demo Sign-In Failed",
+                `${error.message || "Failed to establish a developer session."}${isRateOrConfirmError ? '\n\n💡 Supabase Developer Workarounds:\n\n1. ENABLE ANONYMOUS AUTH (Recommended):\nIn your Supabase Dashboard, go to Auth -> Providers -> Anonymous and turn it ON. This enables zero-configuration instant sign-in.\n\n2. DISABLE EMAIL CONFIRMATION:\nIn your Supabase Dashboard, go to Auth -> Providers -> Email and turn "Confirm email" OFF to instantly register and sign in test accounts.' : ''}`,
+                [{ text: "OK" }]
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEmailAuth = async () => {
+        if (!email.trim() || !password.trim()) {
+            Alert.alert("Required Fields", "Please enter both email and password.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (isSignUp) {
+                console.log("Attempting Custom Email Sign-Up...");
+                const { data, error } = await supabase.auth.signUp({
+                    email: email.trim(),
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: email.trim().split('@')[0],
+                            avatar_url: `https://placehold.co/100x100/png?text=${encodeURIComponent(email.trim()[0].toUpperCase())}`
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                // If email confirmation is enabled, session might be null
+                if (data && !data.session) {
+                    Alert.alert(
+                        "Account Created",
+                        "Your account has been created!\n\n📧 A confirmation link has been sent to your email. Please verify it to log in, OR you can disable \"Confirm email\" in your Supabase Auth -> Providers -> Email settings to bypass email verification during development.",
+                        [{ text: "OK" }]
+                    );
+                } else {
+                    Alert.alert("Success", "Account created and logged in!");
+                }
+            } else {
+                console.log("Attempting Custom Email Sign-In...");
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email.trim(),
+                    password: password,
+                });
+                
+                if (error) throw error;
+                console.log("Custom Email Sign-In Successful!");
+            }
+        } catch (error) {
+            console.error("Email Auth Error:", error);
+            const isRateLimit = error.message?.toLowerCase().includes('rate') || error.message?.toLowerCase().includes('exceeded');
+            
+            Alert.alert(
+                isSignUp ? "Sign-Up Failed" : "Sign-In Failed",
+                `${error.message || "An authentication error occurred."}${isRateLimit ? '\n\n💡 Tip: To bypass email rate limits, go to your Supabase Dashboard -> Auth -> Providers -> Email, and toggle "Confirm email" to OFF.' : ''}`,
+                [{ text: "OK" }]
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-gray-100 dark:bg-zinc-950 justify-center px-8"
+            className="flex-1 bg-gray-100 dark:bg-zinc-950 px-6"
+            style={{ flex: 1 }}
         >
-            <View className="items-center mb-16">
-                <Image 
-                    source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')} 
-                    style={{ width: 280, height: 80 }} 
-                    resizeMode="contain" 
-                />
-                <Text className="text-gray-500 dark:text-zinc-400 mt-2 italic text-lg">Gotta eat 'em all</Text>
-            </View>
+            <ScrollView 
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 40 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+                <View className="items-center mb-10 mt-4">
+                    <Image 
+                        source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')} 
+                        style={{ width: 280, height: 80 }} 
+                        resizeMode="contain" 
+                    />
+                    <Text className="text-gray-500 dark:text-zinc-400 mt-2 italic text-lg">Gotta eat 'em all</Text>
+                </View>
 
-            <View className="space-y-4">
-                <TouchableOpacity
-                    onPress={() => handleOAuth('google')}
-                    className="flex-row items-center justify-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl space-x-3 shadow-sm"
-                >
-                    <Ionicons name="logo-google" size={24} color="#DB4437" />
-                    <Text className="font-semibold text-gray-700 dark:text-zinc-100 text-lg">Continue with Google</Text>
-                </TouchableOpacity>
+                <View className="space-y-4">
+                    {/* Google OAuth */}
+                    <TouchableOpacity
+                        onPress={() => handleOAuth('google')}
+                        disabled={loading}
+                        className="flex-row items-center justify-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl space-x-3 shadow-sm mb-3"
+                    >
+                        <Ionicons name="logo-google" size={24} color="#DB4437" />
+                        <Text className="font-semibold text-gray-700 dark:text-zinc-100 text-lg">Continue with Google</Text>
+                    </TouchableOpacity>
 
+                    {/* Developer Demo Auth */}
+                    <TouchableOpacity
+                        onPress={handleDemoLogin}
+                        disabled={loading}
+                        className="flex-row items-center justify-center bg-primary p-4 rounded-xl space-x-3 shadow-md mb-6"
+                    >
+                        {loading && !showEmailForm ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <>
+                                <Ionicons name="flask" size={24} color="#FFFFFF" />
+                                <Text className="font-bold text-white text-lg">Developer Demo Sign-In</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
 
-            </View>
+                    {/* Divider */}
+                    <View className="flex-row items-center my-4">
+                        <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
+                        <Text className="mx-4 text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Or Use Email</Text>
+                        <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
+                    </View>
 
-            <View className="mt-12 flex-row flex-wrap justify-center items-center px-4">
-                <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
-                    By continuing, you agree to our{' '}
-                </Text>
-                <Link href="/terms-of-service">
-                    <Text className="text-xs font-bold text-primary underline leading-5">
-                        Terms of Service
+                    {/* Custom Email Form Toggle */}
+                    {!showEmailForm ? (
+                        <TouchableOpacity
+                            onPress={() => setShowEmailForm(true)}
+                            className="flex-row items-center justify-center border border-dashed border-gray-300 dark:border-zinc-800 p-4 rounded-xl space-x-3"
+                        >
+                            <Ionicons name="mail-outline" size={20} color={isDark ? '#A1A1AA' : '#71717A'} />
+                            <Text className="font-medium text-gray-500 dark:text-zinc-400 text-base">Sign In or Create Account with Email</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm space-y-4">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-lg font-bold text-gray-800 dark:text-zinc-150">
+                                    {isSignUp ? "Create a New Account" : "Sign In with Email"}
+                                </Text>
+                                <TouchableOpacity 
+                                    onPress={() => {
+                                        setShowEmailForm(false);
+                                        setEmail('');
+                                        setPassword('');
+                                    }}
+                                    className="p-1"
+                                >
+                                    <Ionicons name="close" size={20} color={isDark ? '#A1A1AA' : '#71717A'} />
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Email Input */}
+                            <View className="space-y-1">
+                                <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Email Address</Text>
+                                <TextInput
+                                    className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
+                                    placeholder="your-email@example.com"
+                                    placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                    textContentType="emailAddress"
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Password Input */}
+                            <View className="space-y-1">
+                                <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Password</Text>
+                                <TextInput
+                                    className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
+                                    placeholder="••••••••"
+                                    placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry
+                                    autoCapitalize="none"
+                                    textContentType="password"
+                                    editable={!loading}
+                                />
+                            </View>
+
+                            {/* Submit Button */}
+                            <TouchableOpacity
+                                onPress={handleEmailAuth}
+                                disabled={loading}
+                                className="bg-primary p-4 rounded-xl items-center justify-center mt-2 shadow-sm"
+                            >
+                                {loading && showEmailForm ? (
+                                    <ActivityIndicator color="#FFFFFF" />
+                                ) : (
+                                    <Text className="font-bold text-white text-lg">
+                                        {isSignUp ? "Register Account" : "Sign In"}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+
+                            {/* Mode Toggle Button */}
+                            <TouchableOpacity
+                                onPress={() => setIsSignUp(!isSignUp)}
+                                disabled={loading}
+                                className="align-center py-2"
+                            >
+                                <Text className="text-sm font-semibold text-primary text-center">
+                                    {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+
+                {/* Footer terms */}
+                <View className="mt-12 flex-row flex-wrap justify-center items-center px-4 mb-4">
+                    <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
+                        By continuing, you agree to our{' '}
                     </Text>
-                </Link>
-                <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
-                    {' '}and{' '}
-                </Text>
-                <Link href="/privacy-policy">
-                    <Text className="text-xs font-bold text-primary underline leading-5">
-                        Privacy Policy
+                    <Link href="/terms-of-service">
+                        <Text className="text-xs font-bold text-primary underline leading-5">
+                            Terms of Service
+                        </Text>
+                    </Link>
+                    <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
+                        {' '}and{' '}
                     </Text>
-                </Link>
-                <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
-                    .
-                </Text>
-            </View>
+                    <Link href="/privacy-policy">
+                        <Text className="text-xs font-bold text-primary underline leading-5">
+                            Privacy Policy
+                        </Text>
+                    </Link>
+                    <Text className="text-xs text-gray-400 dark:text-zinc-500 leading-5">
+                        .
+                    </Text>
+                </View>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }

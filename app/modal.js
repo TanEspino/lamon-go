@@ -10,6 +10,7 @@ import CurrencyPicker from '../components/CurrencyPicker';
 import { useReviews } from '../context/ReviewsContext';
 import { useAuth } from '../context/AuthContext';
 import ReviewCard from '../components/ReviewCard';
+import { prepareUploadPayload } from '../utils/uploadHelper';
 
 export default function ModalScreen() {
     const router = useRouter();
@@ -325,14 +326,13 @@ export default function ModalScreen() {
                         console.warn("Failed to compress image, using raw:", manipulateError);
                     }
 
-                    const response = await fetch(finalUri);
-                    const blob = await response.blob();
+                    const uploadPayload = await prepareUploadPayload(finalUri);
                     const fileExt = 'jpg';
                     const fileName = `review_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                     
                     const { data, error } = await supabase.storage
                         .from('review-images')
-                        .upload(fileName, blob, { contentType: `image/${fileExt}` });
+                        .upload(fileName, uploadPayload, { contentType: `image/${fileExt}` });
                         
                     if (error) {
                         throw error;

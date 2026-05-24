@@ -17,10 +17,25 @@ export function ReviewsProvider({ children }) {
         }
         try {
             setLoading(true);
+            // Fetch accepted buddies
+            const { data: buddyData, error: buddyError } = await supabase
+                .from('buddies')
+                .select('requester_id, receiver_id')
+                .eq('status', 'accepted')
+                .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+            
+            let userIdsToFetch = [user.id];
+            if (!buddyError && buddyData) {
+                buddyData.forEach(b => {
+                    if (b.requester_id !== user.id) userIdsToFetch.push(b.requester_id);
+                    if (b.receiver_id !== user.id) userIdsToFetch.push(b.receiver_id);
+                });
+            }
+
             const { data, error } = await supabase
                 .from('reviews')
                 .select('*, profiles:user_id(username, avatar_url, full_name)')
-                .eq('user_id', user.id)
+                .in('user_id', userIdsToFetch)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

@@ -9,6 +9,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { useColorScheme } from 'nativewind';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
+import { prepareUploadPayload } from '../utils/uploadHelper';
 
 export default function OnboardingScreen() {
     const { updateProfileLocal, profile, user, fetchProfile } = useAuth();
@@ -82,15 +83,14 @@ export default function OnboardingScreen() {
                     { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
                 );
 
-                const response = await fetch(manipulatedImage.uri);
-                const blob = await response.blob();
+                const uploadPayload = await prepareUploadPayload(manipulatedImage.uri);
                 const fileExt = 'jpg';
                 const fileName = `avatar_${user.id}_${Date.now()}.${fileExt}`;
                 
                 // Upload to Storage
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('review-images')
-                    .upload(fileName, blob, { contentType: `image/${fileExt}` });
+                    .upload(fileName, uploadPayload, { contentType: `image/${fileExt}` });
                     
                 if (uploadError) throw uploadError;
                 

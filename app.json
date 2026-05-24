@@ -39,11 +39,25 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E11D48"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6dcfc420-b6f5-4d89-9a18-cfc7f4eb6370"
+      }
+    },
+    "owner": "tyspino"
   }
 }

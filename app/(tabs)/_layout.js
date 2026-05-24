@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter, usePathname } from 'expo-router';
-import { Image, View, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image, View, TouchableOpacity, useWindowDimensions, Text } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
-    const { profile } = useAuth();
+    const { profile, pendingCount, unseenAcceptanceCount } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const { width } = useWindowDimensions();
@@ -66,7 +66,7 @@ export default function TabLayout() {
                         {/* Profile Tab */}
                         <TouchableOpacity 
                             onPress={() => router.push('/profile')}
-                            className="p-1 rounded-full items-center justify-center"
+                            className="p-1 rounded-full items-center justify-center relative"
                             activeOpacity={0.7}
                         >
                             {profile && profile.avatar_url && !profile.avatar_url.includes('placehold.co') ? (
@@ -83,6 +83,11 @@ export default function TabLayout() {
                                 />
                             ) : (
                                   <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : inactiveColor} />
+                            )}
+                            {(pendingCount + unseenAcceptanceCount) > 0 && (
+                                <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
+                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount}</Text>
+                                </View>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -133,22 +138,30 @@ export default function TabLayout() {
                                 return <Ionicons size={26} name={focused ? "compass" : "compass-outline"} color={color} />;
                             }
                             if (route.name === 'profile') {
-                                if (profile && profile.avatar_url && !profile.avatar_url.includes('placehold.co')) {
-                                    return (
-                                        <Image
-                                            source={{ uri: profile.avatar_url }}
-                                            style={{
-                                                width: 28,
-                                                height: 28,
-                                                borderRadius: 14,
-                                                borderWidth: focused ? 2 : 1,
-                                                borderColor: focused ? '#E11D48' : (isDark ? '#27272A' : '#E5E7EB')
-                                            }}
-                                            resizeMode="cover"
-                                        />
-                                    );
-                                }
-                                return <Ionicons size={26} name={focused ? "person" : "person-outline"} color={color} />;
+                                return (
+                                    <View className="relative justify-center items-center" style={{ width: 28, height: 28 }}>
+                                        {profile && profile.avatar_url && !profile.avatar_url.includes('placehold.co') ? (
+                                            <Image
+                                                source={{ uri: profile.avatar_url }}
+                                                style={{
+                                                    width: 28,
+                                                    height: 28,
+                                                    borderRadius: 14,
+                                                    borderWidth: focused ? 2 : 1,
+                                                    borderColor: focused ? '#E11D48' : (isDark ? '#27272A' : '#E5E7EB')
+                                                }}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <Ionicons size={26} name={focused ? "person" : "person-outline"} color={color} />
+                                        )}
+                                        {(pendingCount + unseenAcceptanceCount) > 0 && (
+                                            <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
+                                                <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                );
                             }
                             return null;
                         },
