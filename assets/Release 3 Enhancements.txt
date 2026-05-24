@@ -1,0 +1,121 @@
+I. Home Tab
+Core Philosophy: The Home Tab is a chronological feed designed for serendipity. It answers the question, "Where have my Chowmates been eating?" It relies on visual hierarchy rather than heavy filters. To protect the database from excessive API calls, the feed automatically loads once on mount, and then relies strictly on manual, rate-limited refreshing.
+
+1. The Feed Layout & Visual Hierarchy
+The UI consists of a vertical scrolling feed of food posts from the user's chowmates.
+
+User Attribution: Every post must prominently display the author's Avatar and Username at the top of the card.
+
+The Post Data: Retain how it is right now
+
+The "Hit" Badge: Because this tab has no star filters, 5-Star posts must receive a distinct visual treatment (e.g., a "🔥 Certified Hit" badge or a subtle gold border) so users' eyes naturally stop on the best recommendations.
+
+2. Refresh Mechanics & API Protection (Anti-Spam)
+To protect Supabase API limits, the feed utilizes a strict hybrid fetching strategy:
+
+The Initial Mount Fetch: When the user opens the app and the Home screen mounts for the very first time, the app must automatically fire one background fetch to populate the initial feed.
+
+Manual Refreshing: After that initial load, all auto-refreshing is disabled. The user must manually request new data using either the native RefreshControl (pull-to-refresh) inside the FlatList, or by tapping a subtle [ 🔄 ] refresh icon in the top right of the screen header.
+
+The Cooldown Rule (Rate Limiting): The app must implement a strict 60-second cooldown timer (using local state or React Query staleTime).
+If a user triggers a manual refresh, record the timestamp.
+If they attempt to refresh again within 60 seconds, abort the API call and instantly drop the refresh spinner.
+Trigger a subtle, temporary toast notification stating "Feed is up to date."
+
+3. Interactions & Cross-Tab Routing
+Interactions on the Home feed act as springboards to route the user to the Discover Tab.
+
+Viewing a Profile: When a user taps an Avatar or Username on a post, the app programmatically switches the Bottom Tab Navigator to the Discover Tab, updates the activeDiscoverUser state to that specific Chowmate's ID, and instantly loads their personal vault.
+
+Saving a Post: Every post features a distinct [ 🔖 Save ] button. Tapping this fires a Supabase INSERT into the user's saved posts table. This guarantees the post will immediately be visible when the user navigates to the Discover Tab and selects their [ 🔖 Saved ] lens.
+
+4. Data Fetching & Pagination
+To protect device memory and ensure the feed scales cleanly, it must be strictly paginated.
+
+The Query: The Supabase fetch requests the latest feed posts, ordered by created_at descending, with a strict .limit(21).
+
+The Scroll Logic: The React Native FlatList utilizes the onEndReached prop with an onEndReachedThreshold={0.5}. When the user scrolls halfway down the current batch of 21 posts, the app silently fetches the next 21 in the background.
+
+Loading State: A subtle activity spinner renders at the very bottom of the list during background fetches so the user knows more content is arriving.
+==========================================
+II. The Discover Tab 
+Core Philosophy: The Discover Tab is the "Single Source of Truth." Instead of building separate screens for global search, personal profiles, and friends' profiles, everything routes here. The user simply changes the "lens" via the Context Switcher to dictate which database rows to fetch.
+
+1. The Context Switcher (Top Row UI)
+Pinned just below the safe area, a horizontal, swipable ScrollView (indicators hidden) dictates the active vault.
+
+The Layout: [ 🌎 All ] [ 👤 Me ] [ 🔖 Saved ] [ 🧑 Albert ] [ 👨 Ken ] [ 🔍 More ]
+
+Static Lenses: * [ 🌎 All ]: Fetches the entire network's history.
+
+[ 👤 Me ]: Fetches only the user's posts.
+
+[ 🔖 Saved ]: Fetches posts the user has bookmarked.
+
+Dynamic Lenses (Chowmates): The 3 to 4 Chowmate slots are dynamically populated and sorted by recency (who posted a 5-star hit most recently).
+
+The Overflow (🔍 More): Tapping this opens a @gorhom/bottom-sheet over the bottom half of the screen. It contains a sticky search bar and a fast, vertical FlatList of the user's complete Chowmate network. Tapping a name closes the sheet, updates the active vault, and bumps that friend's avatar into the top row.
+
+2. The Dynamic Profile Header
+Directly below the Context Switcher, the UI adapts to the selected lens.
+
+If [ All ] or [ Saved ] is selected: The header completely collapses to maximize screen real estate for the grid.
+
+If [ Me ] or a Chowmate is selected: A minimal Profile Header renders. It displays the Avatar, Name, a utility stat - number of dish and restaurant, and a subtle friendship indicator.
+
+3. The High-Speed Filters
+These Search filter tools sit above the feed to instantly drill down the selected vault.
+
+4. The Visual Vault (The Feed) & Pagination
+The bottom half of the screen renders the actual data using Supabase cursor-based pagination to protect device memory.
+
+Pagination Rules: The query uses .limit(21). The FlatList uses onEndReached with a threshold of 0.5 to automatically fetch the next 21 items (perfectly completing 7 rows in a 3-column grid) as the user scrolls. A subtle spinner appears at the bottom during fetching.
+
+Grid View (Default): A 3-column grid of strictly food photos for rapid visual scanning.
+
+List View (Toggle): A stacked UI showing the photo, restaurant name, dish, and star rating.
+
+Interaction: Users can tap a "Save/Bookmark" button on any post in the [ All ] or [ Chowmate ] views, which will instantly route that post to their [ 🔖 Saved ] lens.
+
+5. The Global Navigation Routing
+The app's Stack Navigator uses this tab as the central hub.
+
+Behavior: If a user is scrolling the Home Feed and taps Ken's face, or if they open their Chowmates List and tap Ken's name, the app programmatically switches the Bottom Tab Navigator to the Discover Tab. It updates the activeDiscoverUser state to Ken's ID and instantly loads his personal vault.
+
+Return Flow: To return to the chronological Home feed, the user simply taps the "Home" icon on the bottom navigation bar.
+===============================
+III. Update the New Post Creation
+Core Philosophy: Users must have absolute control over who sees their food logs. The "New Post" screen introduces a strict visibility tier, allowing the app to function as both a private personal journal and a high-signal social broadcast tool.
+
+1. The UI: Audience Selection (New Post Screen)
+Before finalizing a post, the user must select an audience via a clean dropdown or segmented control toggle.
+Option 1: Personal Journal Function: Strictly private.
+Visibility: Only appears in the user's own [ 👤 Me ] lens on the Discover Tab. It does not push to the chronological Home feed.
+
+Option 2: Share to Chowmates (Default) Function: The standard social behavior.
+Visibility: Pushes silently to the chronological Home feed for all Chowmates to see when they casually scroll.
+
+Option 3: Recommend to Chowmates Function: High-urgency recommendation.
+Visibility: Pushes to the Home feed AND triggers a background Supabase Edge Function to send an FCM push notification (e.g., "Ken just recommended a dish to you!") to all Chowmates.
+
+2. Database Architecture Updates
+To support this, the feed_posts table requires structural updates:
+Add a new column: visibility (Enum or Text: 'private', 'shared', 'recommended').
+
+Security Rule (RLS): Update Row Level Security policies so that if visibility === 'private', only the row owner (auth.uid()) can SELECT it. If shared or recommended, allow SELECT for authenticated Chowmates.
+
+3. Visual Indicators (The Feed UI)
+When viewing posts on the Home or Discover tabs, the audience level must be immediately obvious to the user so they understand the context of the post. Add a small icon next to the timestamp or rating:
+
+Personal Journal: 🔒 (Lock icon) - Reminds the user that only they can see this.
+
+Share to Chowmates: 👥 (People icon, or completely hidden to keep the UI clean as the default state).
+
+Recommend to Chowmates: 🎖️ / 🏅 (Best-Seller Badge / Ribbon icon) - Visually validates that this was explicitly blasted out as a high-tier recommendation to the network.
+
+4. The UX Flow: "The Single Post Modal"
+When the user taps the notification ("Ken just recommended a dish to you!"), the app opens and immediately slides up a specialized screen.
+
+What they see: They do not see a feed. They see only that specific post, front and center. It displays Ken's avatar, the food photo, the Best-Seller badge 🏅, the restaurant, and the dish.
+
+The Call to Action: Right below the photo, you place a massive, impossible-to-miss [ 🔖 Save to Fave Dishes ] button. The whole point of the notification is to get them to save the recommendation, so you make it a 1-tap action.

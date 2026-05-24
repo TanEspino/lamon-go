@@ -24,14 +24,6 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
 
     return (
         <View className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 z-50">
-            {/* Custom Logo Header */}
-            <View className="items-center justify-center bg-gray-100 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
-                <Image
-                    source={isDark ? require('../assets/logo_profile_dark.png') : require('../assets/logo_profile.png')}
-                    style={{ width: 140, height: 40 }}
-                    resizeMode="contain"
-                />
-            </View>
             {/* Search Controls Container with its own padding */}
             <View className="px-4 pb-3 pt-2">
                 {/* Search Type Toggle */}

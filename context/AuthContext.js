@@ -4,6 +4,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { Platform, Alert, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext({});
 
@@ -13,10 +14,12 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [session, setSession] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [activeDiscoverUser, setActiveDiscoverUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [pendingCount, setPendingCount] = useState(0);
     const [buddyCount, setBuddyCount] = useState(0);
     const [unseenAcceptanceCount, setUnseenAcceptanceCount] = useState(0);
+    const [unseenRecommendationsCount, setUnseenRecommendationsCount] = useState(0);
     const [toast, setToast] = useState({ visible: false, title: '', message: '', type: 'success' });
     const router = useRouter();
     const segments = useSegments();
@@ -36,6 +39,15 @@ export const AuthProvider = ({ children }) => {
 
     const clearUnseenAcceptance = () => {
         setUnseenAcceptanceCount(0);
+    };
+
+    const clearUnseenRecommendations = async () => {
+        setUnseenRecommendationsCount(0);
+        try {
+            await AsyncStorage.setItem('last_notifications_viewed_at', new Date().toISOString());
+        } catch (e) {
+            console.log("Error writing last viewed notification timestamp:", e);
+        }
     };
 
     useEffect(() => {
@@ -157,10 +169,37 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (Platform.OS === 'web') return;
 
+        // Check if the app was cold-started from a tapped notification
+        Notifications.getLastNotificationResponseAsync().then(response => {
+            if (response) {
+                const data = response?.notification?.request?.content?.data;
+                let screenPath = data?.url;
+                console.log('🎯 App cold-started from push notification click:', data);
+                if (screenPath && screenPath.startsWith('/single-post')) {
+                    screenPath = '/notifications';
+                }
+                if (screenPath) {
+                    setTimeout(() => {
+                        try {
+                            router.push(screenPath);
+                        } catch (e) {
+                            console.error('Failed to cold-start redirect:', e);
+                        }
+                    }, 800);
+                }
+            }
+        });
+
         const responseSub = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response?.notification?.request?.content?.data;
-            const screenPath = data?.url;
+            let screenPath = data?.url;
             console.log('🎯 User clicked push notification banner with data:', data);
+            
+            // Override recommended dish notification tap redirection to target notifications list
+            if (screenPath && screenPath.startsWith('/single-post')) {
+                screenPath = '/notifications';
+            }
+            
             if (screenPath) {
                 try {
                     router.push(screenPath);
@@ -351,6 +390,46 @@ export const AuthProvider = ({ children }) => {
                 }
                 buddyIdsRef.current = newIds;
             }
+
+            // 3. Fetch recommended posts count from ALL buddies after lastNotificationsViewedAt
+            let unseenRecsCount = 0;
+            const buddyIds = bData ? bData.map(item => {
+                const isRequester = item.requester_id === activeId;
+                return isRequester ? item.receiver_id : item.requester_id;
+            }) : [];
+
+            if (buddyIds.length > 0) {
+                // Get last viewed timestamp from AsyncStorage
+                let lastViewed = null;
+                try {
+                    const stored = await AsyncStorage.getItem('last_notifications_viewed_at');
+                    if (stored) {
+                        lastViewed = new Date(stored).toISOString();
+                    } else {
+                        // Default to last 7 days if no view timestamp exists
+                        lastViewed = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                    }
+                } catch (e) {
+                    console.log("Error reading last viewed notification timestamp:", e);
+                    lastViewed = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                }
+
+                let query = supabase
+                    .from('reviews')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('visibility', 'recommended')
+                    .in('user_id', buddyIds);
+
+                if (lastViewed) {
+                    query = query.gt('created_at', lastViewed);
+                }
+
+                const { count: recCount, error: recErr } = await query;
+                if (!recErr && recCount !== null) {
+                    unseenRecsCount = recCount;
+                }
+            }
+            setUnseenRecommendationsCount(unseenRecsCount);
             
             // Once a successful stats load is complete, toggle first load flag to false
             isFirstLoadRef.current = false;
@@ -456,6 +535,26 @@ export const AuthProvider = ({ children }) => {
                 isWebSocketConnectedRef.current = isConnected;
             });
 
+        const reviewsSubscription = supabase
+            .channel('reviews-global-realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'reviews' },
+                async (payload) => {
+                    console.log("🔔 Global real-time reviews update received:", payload);
+                    
+                    // If a recommended review is added, updated, or deleted, refetch stats
+                    const isNewRec = payload.eventType === 'INSERT' && payload.new && payload.new.visibility === 'recommended';
+                    const isUpdatedRec = payload.eventType === 'UPDATE' && payload.new && (payload.new.visibility === 'recommended' || (payload.old && payload.old.visibility === 'recommended'));
+                    const isDeletedRec = payload.eventType === 'DELETE' && (payload.old && payload.old.visibility === 'recommended');
+                    
+                    if (isNewRec || isUpdatedRec || isDeletedRec) {
+                        fetchBuddyStats(user.id, true);
+                    }
+                }
+            )
+            .subscribe();
+
         // Backup poll interval to fetch stats in the background (Mobile only failsafe)
         // Queries the database on a safe 60-second cycle as a solid fallback heartbeat,
         // in case the WebSocket is silent, firewalled, or Postgres Realtime is disabled on the backend.
@@ -500,6 +599,7 @@ export const AuthProvider = ({ children }) => {
 
         return () => {
             supabase.removeChannel(buddiesSubscription);
+            supabase.removeChannel(reviewsSubscription);
             if (backupPoll) clearInterval(backupPoll);
             if (Platform.OS === 'web' && typeof document !== 'undefined') {
                 document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -533,7 +633,7 @@ export const AuthProvider = ({ children }) => {
     }, [user, loading, segments, profile]);
 
     return (
-        <AuthContext.Provider value={{ user, session, profile, loading, signOut, fetchProfile, updateProfileLocal, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, clearUnseenAcceptance, toast, setToast, showToast }}>
+        <AuthContext.Provider value={{ user, session, profile, loading, signOut, fetchProfile, updateProfileLocal, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, clearUnseenAcceptance, unseenRecommendationsCount, clearUnseenRecommendations, toast, setToast, showToast, activeDiscoverUser, setActiveDiscoverUser }}>
             {!loading && children}
         </AuthContext.Provider>
     );

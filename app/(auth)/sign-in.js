@@ -6,8 +6,26 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { useColorScheme } from 'nativewind';
 import { useRouter, Link } from 'expo-router';
+import Constants from 'expo-constants';
 
 WebBrowser.maybeCompleteAuthSession(); // Handle redirect on web
+
+const isDevEnvironment = () => {
+    // 1. Is it a local dev build?
+    if (__DEV__) return true;
+    
+    // 2. Is it executing inside the Expo Go developer client?
+    if (Constants.appOwnership === 'expo') return true;
+    
+    // 3. Is the bundle served from a local developer machine IP?
+    const manifest = Constants.expoConfig || {};
+    const hostUri = manifest.hostUri || '';
+    if (hostUri.includes('localhost') || hostUri.includes('127.0.0.1') || hostUri.includes('192.168.')) {
+        return true;
+    }
+    
+    return false;
+};
 
 export default function SignInScreen() {
     const router = useRouter();
@@ -241,120 +259,125 @@ export default function SignInScreen() {
                     <TouchableOpacity
                         onPress={() => handleOAuth('google')}
                         disabled={loading}
-                        className="flex-row items-center justify-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl space-x-3 shadow-sm mb-3"
+                        className="flex-row items-row items-center justify-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl space-x-3 shadow-sm mb-3"
                     >
-                        <Ionicons name="logo-google" size={24} color="#DB4437" />
+                        <Ionicons name="logo-google" size={24} color="#DB4437" style={{ marginRight: 8 }} />
                         <Text className="font-semibold text-gray-700 dark:text-zinc-100 text-lg">Continue with Google</Text>
                     </TouchableOpacity>
 
-                    {/* Developer Demo Auth */}
-                    <TouchableOpacity
-                        onPress={handleDemoLogin}
-                        disabled={loading}
-                        className="flex-row items-center justify-center bg-primary p-4 rounded-xl space-x-3 shadow-md mb-6"
-                    >
-                        {loading && !showEmailForm ? (
-                            <ActivityIndicator color="#FFFFFF" />
-                        ) : (
-                            <>
-                                <Ionicons name="flask" size={24} color="#FFFFFF" />
-                                <Text className="font-bold text-white text-lg">Developer Demo Sign-In</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Divider */}
-                    <View className="flex-row items-center my-4">
-                        <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
-                        <Text className="mx-4 text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Or Use Email</Text>
-                        <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
-                    </View>
-
-                    {/* Custom Email Form Toggle */}
-                    {!showEmailForm ? (
-                        <TouchableOpacity
-                            onPress={() => setShowEmailForm(true)}
-                            className="flex-row items-center justify-center border border-dashed border-gray-300 dark:border-zinc-800 p-4 rounded-xl space-x-3"
-                        >
-                            <Ionicons name="mail-outline" size={20} color={isDark ? '#A1A1AA' : '#71717A'} />
-                            <Text className="font-medium text-gray-500 dark:text-zinc-400 text-base">Sign In or Create Account with Email</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <View className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm space-y-4">
-                            <View className="flex-row justify-between items-center mb-2">
-                                <Text className="text-lg font-bold text-gray-800 dark:text-zinc-150">
-                                    {isSignUp ? "Create a New Account" : "Sign In with Email"}
-                                </Text>
-                                <TouchableOpacity 
-                                    onPress={() => {
-                                        setShowEmailForm(false);
-                                        setEmail('');
-                                        setPassword('');
-                                    }}
-                                    className="p-1"
-                                >
-                                    <Ionicons name="close" size={20} color={isDark ? '#A1A1AA' : '#71717A'} />
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Email Input */}
-                            <View className="space-y-1">
-                                <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Email Address</Text>
-                                <TextInput
-                                    className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
-                                    placeholder="your-email@example.com"
-                                    placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    autoCapitalize="none"
-                                    keyboardType="email-address"
-                                    textContentType="emailAddress"
-                                    editable={!loading}
-                                />
-                            </View>
-
-                            {/* Password Input */}
-                            <View className="space-y-1">
-                                <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Password</Text>
-                                <TextInput
-                                    className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
-                                    placeholder="••••••••"
-                                    placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry
-                                    autoCapitalize="none"
-                                    textContentType="password"
-                                    editable={!loading}
-                                />
-                            </View>
-
-                            {/* Submit Button */}
+                    {/* Developer Demo & Custom Email Sign-In (Automatically detected local/development sandbox) */}
+                    {isDevEnvironment() && (
+                        <>
+                            {/* Developer Demo Auth */}
                             <TouchableOpacity
-                                onPress={handleEmailAuth}
+                                onPress={handleDemoLogin}
                                 disabled={loading}
-                                className="bg-primary p-4 rounded-xl items-center justify-center mt-2 shadow-sm"
+                                className="flex-row items-center justify-center bg-primary p-4 rounded-xl space-x-3 shadow-md mb-6"
                             >
-                                {loading && showEmailForm ? (
+                                {loading && !showEmailForm ? (
                                     <ActivityIndicator color="#FFFFFF" />
                                 ) : (
-                                    <Text className="font-bold text-white text-lg">
-                                        {isSignUp ? "Register Account" : "Sign In"}
-                                    </Text>
+                                    <>
+                                        <Ionicons name="flask" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
+                                        <Text className="font-bold text-white text-lg">Developer Demo Sign-In</Text>
+                                    </>
                                 )}
                             </TouchableOpacity>
 
-                            {/* Mode Toggle Button */}
-                            <TouchableOpacity
-                                onPress={() => setIsSignUp(!isSignUp)}
-                                disabled={loading}
-                                className="align-center py-2"
-                            >
-                                <Text className="text-sm font-semibold text-primary text-center">
-                                    {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
+                            {/* Divider */}
+                            <View className="flex-row items-center my-4">
+                                <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
+                                <Text className="mx-4 text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Or Use Email</Text>
+                                <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
+                            </View>
+
+                            {/* Custom Email Form Toggle */}
+                            {!showEmailForm ? (
+                                <TouchableOpacity
+                                    onPress={() => setShowEmailForm(true)}
+                                    className="flex-row items-center justify-center border border-dashed border-gray-300 dark:border-zinc-800 p-4 rounded-xl space-x-3"
+                                >
+                                    <Ionicons name="mail-outline" size={20} color={isDark ? '#A1A1AA' : '#71717A'} style={{ marginRight: 8 }} />
+                                    <Text className="font-medium text-gray-500 dark:text-zinc-400 text-base">Sign In or Create Account with Email</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <View className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm space-y-4">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                        <Text className="text-lg font-bold text-gray-800 dark:text-zinc-150">
+                                            {isSignUp ? "Create a New Account" : "Sign In with Email"}
+                                        </Text>
+                                        <TouchableOpacity 
+                                            onPress={() => {
+                                                setShowEmailForm(false);
+                                                setEmail('');
+                                                setPassword('');
+                                            }}
+                                            className="p-1"
+                                        >
+                                            <Ionicons name="close" size={20} color={isDark ? '#A1A1AA' : '#71717A'} />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* Email Input */}
+                                    <View className="space-y-1">
+                                        <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Email Address</Text>
+                                        <TextInput
+                                            className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
+                                            placeholder="your-email@example.com"
+                                            placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            autoCapitalize="none"
+                                            keyboardType="email-address"
+                                            textContentType="emailAddress"
+                                            editable={!loading}
+                                        />
+                                    </View>
+
+                                    {/* Password Input */}
+                                    <View className="space-y-1">
+                                        <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Password</Text>
+                                        <TextInput
+                                            className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
+                                            placeholder="••••••••"
+                                            placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            secureTextEntry
+                                            autoCapitalize="none"
+                                            textContentType="password"
+                                            editable={!loading}
+                                        />
+                                    </View>
+
+                                    {/* Submit Button */}
+                                    <TouchableOpacity
+                                        onPress={handleEmailAuth}
+                                        disabled={loading}
+                                        className="bg-primary p-4 rounded-xl items-center justify-center mt-2 shadow-sm"
+                                    >
+                                        {loading && showEmailForm ? (
+                                            <ActivityIndicator color="#FFFFFF" />
+                                        ) : (
+                                            <Text className="font-bold text-white text-lg">
+                                                {isSignUp ? "Register Account" : "Sign In"}
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    {/* Mode Toggle Button */}
+                                    <TouchableOpacity
+                                        onPress={() => setIsSignUp(!isSignUp)}
+                                        disabled={loading}
+                                        className="align-center py-2"
+                                    >
+                                        <Text className="text-sm font-semibold text-primary text-center">
+                                            {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </>
                     )}
                 </View>
 

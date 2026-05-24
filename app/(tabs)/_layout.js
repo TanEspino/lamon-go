@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { Image, View, TouchableOpacity, useWindowDimensions, Text } from 'react-native';
@@ -5,9 +6,16 @@ import { useAuth } from '../../context/AuthContext';
 import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
-    const { profile, pendingCount, unseenAcceptanceCount } = useAuth();
+    const { profile, pendingCount, unseenAcceptanceCount, unseenRecommendationsCount, fetchBuddyStats, user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+
+    // Trigger notification and buddy stats sync in the background whenever a tab is switched or focused
+    useEffect(() => {
+        if (user?.id && fetchBuddyStats) {
+            fetchBuddyStats(user.id);
+        }
+    }, [pathname, user?.id, fetchBuddyStats]);
     const { width } = useWindowDimensions();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -84,9 +92,9 @@ export default function TabLayout() {
                             ) : (
                                   <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : inactiveColor} />
                             )}
-                            {(pendingCount + unseenAcceptanceCount) > 0 && (
+                            {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
                                 <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
-                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount}</Text>
+                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -155,9 +163,9 @@ export default function TabLayout() {
                                         ) : (
                                             <Ionicons size={26} name={focused ? "person" : "person-outline"} color={color} />
                                         )}
-                                        {(pendingCount + unseenAcceptanceCount) > 0 && (
+                                        {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
                                             <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
-                                                <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount}</Text>
+                                                <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
                                             </View>
                                         )}
                                     </View>

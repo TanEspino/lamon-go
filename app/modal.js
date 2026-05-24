@@ -1,16 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useEffect, useState, useRef } from 'react';
-import { Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import CurrencyPicker from '../components/CurrencyPicker';
 import { useReviews } from '../context/ReviewsContext';
 import { useAuth } from '../context/AuthContext';
 import ReviewCard from '../components/ReviewCard';
 import { prepareUploadPayload } from '../utils/uploadHelper';
+import { useColorScheme } from 'nativewind';
 
 export default function ModalScreen() {
     const router = useRouter();
@@ -20,6 +21,8 @@ export default function ModalScreen() {
     const params = useLocalSearchParams();
     const isEditing = !!params.id;
     const { addReview, updateReview, reviews } = useReviews();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const [step, setStep] = useState(1); // 1 = Upload Pic, 2 = Details, 3 = Preview
 
@@ -69,6 +72,7 @@ export default function ModalScreen() {
     const [photos, setPhotos] = useState([]);
     const [price, setPrice] = useState('');
     const [currency, setCurrency] = useState('PHP');
+    const [visibility, setVisibility] = useState('shared');
     const [dateOrdered, setDateOrdered] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
@@ -80,6 +84,15 @@ export default function ModalScreen() {
     const [activeIndex, setActiveIndex] = useState(0);
     const modalScrollViewRef = useRef(null);
     const prevPhotosLength = useRef(0);
+
+    // Rule: Can only recommend if rating is 4 stars or above, and NOT in edit mode
+    useEffect(() => {
+        if (isEditing || rating < 4) {
+            if (visibility === 'recommended') {
+                setVisibility('shared');
+            }
+        }
+    }, [rating, isEditing, visibility]);
 
     const handleModalScroll = (event) => {
         const contentOffset = event.nativeEvent.contentOffset.x;
@@ -146,6 +159,7 @@ export default function ModalScreen() {
             }
             setPrice(params.price ? String(params.price) : '');
             setCurrency(params.currency || 'PHP');
+            setVisibility(params.visibility || 'shared');
             setDateOrdered(params.date_ordered ? new Date(params.date_ordered) : new Date());
         }
     }, [params.id]);
@@ -358,6 +372,7 @@ export default function ModalScreen() {
                 photo_url: joinedUrlsStr,
                 price: parseFloat(price) || 0,
                 currency,
+                visibility,
             };
 
             if (isEditing) {
@@ -402,25 +417,25 @@ export default function ModalScreen() {
                     elevation: 10
                 }}
             >
-                <SafeAreaView style={{ flex: 1, backgroundColor: 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#09090b' : 'white', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' }}>
                     {/* Grab Handle */}
-                    <View className="items-center py-2.5 bg-white">
-                        <View className="w-10 h-1 bg-gray-200 rounded-full" />
+                    <View className="items-center py-2.5 bg-white dark:bg-zinc-950">
+                        <View className="w-10 h-1 bg-gray-200 dark:bg-zinc-800 rounded-full" />
                     </View>
 
                     {/* Header: Dynamic Step Navigation */}
-                    <View className="flex-row justify-between items-center px-4 pb-3 border-b border-gray-100 bg-white">
+                    <View className="flex-row justify-between items-center px-4 pb-3 border-b border-gray-100 dark:border-zinc-900 bg-white dark:bg-zinc-950">
                         {step === 1 ? (
                             <Pressable onPress={handleDismiss}>
-                                <Ionicons name="close-outline" size={28} color="#262626" />
+                                <Ionicons name="close-outline" size={28} color={isDark ? '#F4F4F5' : '#262626'} />
                             </Pressable>
                         ) : (
                             <Pressable onPress={() => setStep(step - 1)}>
-                                <Ionicons name="chevron-back" size={28} color="#262626" />
+                                <Ionicons name="chevron-back" size={28} color={isDark ? '#F4F4F5' : '#262626'} />
                             </Pressable>
                         )}
 
-                        <Text className="text-base font-bold text-black">
+                        <Text className="text-base font-bold text-black dark:text-white">
                             {step === 1 ? (isEditing ? 'Edit Photo' : 'New Post') : step === 2 ? 'Details' : 'Preview'}
                         </Text>
 
@@ -474,7 +489,7 @@ export default function ModalScreen() {
                 >
                     {step === 1 && (
                         /* Step 1: Photos only */
-                        <View className="bg-gray-50 border-b border-gray-100 relative overflow-hidden" style={{ width: containerWidth, height: containerWidth }}>
+                        <View className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-100 dark:border-zinc-900 relative overflow-hidden" style={{ width: containerWidth, height: containerWidth }}>
                             {photos.length > 0 ? (
                                 <View className="w-full h-full relative">
                                     <ScrollView 
@@ -574,13 +589,13 @@ export default function ModalScreen() {
                             ) : (
                                 <Pressable
                                     onPress={() => handlePhotoSelection()}
-                                    className="w-full h-full items-center justify-center space-y-2 px-6"
+                                    className="w-full h-full items-center justify-center space-y-2 px-6 bg-gray-50 dark:bg-zinc-950"
                                 >
-                                    <View className="w-16 h-16 rounded-full bg-gray-200 items-center justify-center mb-1">
-                                        <Ionicons name="camera" size={32} color="#9CA3AF" />
+                                    <View className="w-16 h-16 rounded-full bg-gray-200 dark:bg-zinc-800 items-center justify-center mb-1">
+                                        <Ionicons name="camera" size={32} color={isDark ? "#A3A3A3" : "#9CA3AF"} />
                                     </View>
-                                    <Text className="text-gray-700 font-bold text-lg">Max 5 photos.</Text>
-                                    <Text className="text-gray-400 text-sm text-center px-4 mt-1">Just give us the absolute chef's kiss angle. 🤌🏼</Text>
+                                    <Text className="text-gray-700 dark:text-zinc-300 font-bold text-lg">Max 5 photos.</Text>
+                                    <Text className="text-gray-400 dark:text-zinc-500 text-sm text-center px-4 mt-1">Just give us the absolute chef's kiss angle. 🤌🏼</Text>
                                 </Pressable>
                             )}
 
@@ -603,15 +618,15 @@ export default function ModalScreen() {
                         <View>
                             {/* Miniature Photo Thumbnail preview at the top of Step 2 */}
                             {photos.length > 0 && (
-                                <View className="flex-row items-center px-5 py-4 border-b border-gray-100 bg-gray-50/40">
+                                <View className="flex-row items-center px-5 py-4 border-b border-gray-100 dark:border-zinc-900 bg-gray-50 dark:bg-zinc-900/40">
                                     <Image 
                                         source={{ uri: photos[0] }} 
-                                        style={{ width: 56, height: 56, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' }} 
+                                        style={{ width: 56, height: 56, borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#27272A' : '#E5E7EB' }} 
                                         resizeMode="cover"
                                     />
                                     <View className="ml-4 flex-1">
-                                        <Text className="text-gray-800 font-bold text-sm" numberOfLines={1}>{dish || 'What did you eat?'}</Text>
-                                        <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>{restaurantName || 'Which restaurant?'}</Text>
+                                        <Text className="text-gray-800 dark:text-zinc-200 font-bold text-sm" numberOfLines={1}>{dish || 'What did you eat?'}</Text>
+                                        <Text className="text-gray-500 dark:text-zinc-400 text-xs mt-0.5" numberOfLines={1}>{restaurantName || 'Which restaurant?'}</Text>
                                     </View>
                                 </View>
                             )}
@@ -620,12 +635,12 @@ export default function ModalScreen() {
                             <View className="px-4 py-2">
                                 {/* Dish Name */}
                                 <View className="z-20 relative">
-                                    <View className={`flex-row items-center py-4 border-b ${focusedField === 'dish' ? 'border-blue-500' : 'border-gray-100'}`}>
+                                    <View className={`flex-row items-center py-4 border-b ${focusedField === 'dish' ? 'border-blue-500' : 'border-gray-100 dark:border-zinc-900'}`}>
                                         <View className="w-8 items-center mr-3">
                                             <Ionicons 
                                                 name="fast-food-outline" 
                                                 size={24} 
-                                                color={focusedField === 'dish' ? '#3B82F6' : '#262626'} 
+                                                color={focusedField === 'dish' ? '#3B82F6' : (isDark ? '#A3A3A3' : '#262626')} 
                                             />
                                         </View>
                                         <TextInput
@@ -643,8 +658,8 @@ export default function ModalScreen() {
                                                 setTimeout(() => setShowDishSuggestions(false), 200);
                                             }}
                                             placeholder="Name of the dish..."
-                                            placeholderTextColor="#9CA3AF"
-                                            className="flex-1 text-base text-black"
+                                            placeholderTextColor="#71717A"
+                                            className="flex-1 text-base text-black dark:text-white"
                                             style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10, outlineStyle: 'none' }}
                                         />
                                     </View>
@@ -652,14 +667,14 @@ export default function ModalScreen() {
                                     {/* Dish Autocomplete Suggestions */}
                                     {showDishSuggestions && filteredDishes.length > 0 && (
                                         <View 
-                                            className="bg-gray-50 border border-gray-300 rounded-lg absolute left-10 right-0 z-50 overflow-hidden"
+                                            className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg absolute left-10 right-0 z-50 overflow-hidden"
                                             style={{ top: 60, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 }}
                                         >
                                             <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 150 }}>
                                                 {filteredDishes.map((item, index) => (
                                                     <Pressable 
                                                         key={index} 
-                                                        className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredDishes.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                        className={`px-4 py-3 bg-gray-50 dark:bg-zinc-800 flex-row items-center ${index < filteredDishes.length - 1 ? 'border-b border-gray-200 dark:border-zinc-700' : ''}`}
                                                         onPressIn={() => {
                                                             setDish(item);
                                                             setShowDishSuggestions(false);
@@ -670,9 +685,9 @@ export default function ModalScreen() {
                                                         }}
                                                     >
                                                         <View className="mr-3">
-                                                            <Ionicons name="search-outline" size={18} color="#6B7280" />
+                                                            <Ionicons name="fast-food-outline" size={18} color={isDark ? '#A3A3A3' : '#6B7280'} />
                                                         </View>
-                                                        <Text className="text-base text-gray-800 font-medium flex-1" numberOfLines={1}>{item}</Text>
+                                                        <Text className="text-base text-gray-800 dark:text-zinc-200 font-medium flex-1" numberOfLines={1}>{item}</Text>
                                                     </Pressable>
                                                 ))}
                                             </ScrollView>
@@ -682,12 +697,12 @@ export default function ModalScreen() {
 
                                 {/* Restaurant */}
                                 <View className="z-10 relative">
-                                    <View className={`flex-row items-center py-4 border-b ${focusedField === 'restaurant' ? 'border-blue-500' : 'border-gray-100'}`}>
+                                    <View className={`flex-row items-center py-4 border-b ${focusedField === 'restaurant' ? 'border-blue-500' : 'border-gray-100 dark:border-zinc-900'}`}>
                                         <View className="w-8 items-center mr-3">
                                             <Ionicons 
                                                 name="location-outline" 
                                                 size={24} 
-                                                color={focusedField === 'restaurant' ? '#3B82F6' : '#262626'} 
+                                                color={focusedField === 'restaurant' ? '#3B82F6' : (isDark ? '#A3A3A3' : '#262626')} 
                                             />
                                         </View>
                                         <TextInput
@@ -705,8 +720,8 @@ export default function ModalScreen() {
                                                 setTimeout(() => setShowSuggestions(false), 200);
                                             }}
                                             placeholder="Add location (Restaurant)..."
-                                            placeholderTextColor="#9CA3AF"
-                                            className="flex-1 text-base text-black"
+                                            placeholderTextColor="#71717A"
+                                            className="flex-1 text-base text-black dark:text-white"
                                             style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10, outlineStyle: 'none' }}
                                         />
                                     </View>
@@ -714,14 +729,14 @@ export default function ModalScreen() {
                                     {/* Autocomplete Suggestions */}
                                     {showSuggestions && filteredRestaurants.length > 0 && (
                                         <View 
-                                            className="bg-gray-50 border border-gray-300 rounded-lg absolute left-10 right-0 z-50 overflow-hidden"
+                                            className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg absolute left-10 right-0 z-50 overflow-hidden"
                                             style={{ top: 60, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 }}
                                         >
                                             <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 150 }}>
                                                 {filteredRestaurants.map((place, index) => (
                                                     <Pressable 
                                                         key={index} 
-                                                        className={`px-4 py-3 bg-gray-50 flex-row items-center ${index < filteredRestaurants.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                        className={`px-4 py-3 bg-gray-50 dark:bg-zinc-800 flex-row items-center ${index < filteredRestaurants.length - 1 ? 'border-b border-gray-200 dark:border-zinc-700' : ''}`}
                                                         onPressIn={() => {
                                                             setRestaurantName(place);
                                                             setShowSuggestions(false);
@@ -732,9 +747,9 @@ export default function ModalScreen() {
                                                         }}
                                                     >
                                                         <View className="mr-3">
-                                                            <Ionicons name="search-outline" size={18} color="#6B7280" />
+                                                            <Ionicons name="search-outline" size={18} color={isDark ? '#A3A3A3' : '#6B7280'} />
                                                         </View>
-                                                        <Text className="text-base text-gray-800 font-medium flex-1" numberOfLines={1}>{place}</Text>
+                                                        <Text className="text-base text-gray-800 dark:text-zinc-200 font-medium flex-1" numberOfLines={1}>{place}</Text>
                                                     </Pressable>
                                                 ))}
                                             </ScrollView>
@@ -743,17 +758,17 @@ export default function ModalScreen() {
                                 </View>
 
                                 {/* Price & Currency */}
-                                <View className={`flex-row items-center py-4 border-b ${focusedField === 'price' ? 'border-blue-500' : 'border-gray-100'}`}>
+                                <View className={`flex-row items-center py-4 border-b ${focusedField === 'price' ? 'border-blue-500' : 'border-gray-100 dark:border-zinc-900'}`}>
                                     <View className="w-8 items-center mr-3">
                                         <Ionicons 
                                             name="wallet-outline" 
                                             size={24} 
-                                            color={focusedField === 'price' ? '#3B82F6' : '#262626'} 
+                                            color={focusedField === 'price' ? '#3B82F6' : (isDark ? '#A3A3A3' : '#262626')} 
                                         />
                                     </View>
                                     <View className="flex-1 flex-row items-center">
                                         <Pressable onPress={() => setShowCurrencyModal(true)} className="flex-row items-center mr-2">
-                                            <Text className={`text-base font-bold mr-1 ${focusedField === 'price' ? 'text-blue-500' : 'text-black'}`}>{currency}</Text>
+                                            <Text className={`text-base font-bold mr-1 ${focusedField === 'price' ? 'text-blue-500' : 'text-black dark:text-white'}`}>{currency}</Text>
                                             <Ionicons name="chevron-down" size={12} color={focusedField === 'price' ? '#3B82F6' : '#6B7280'} />
                                         </Pressable>
                                         <TextInput
@@ -762,60 +777,104 @@ export default function ModalScreen() {
                                             onFocus={() => setFocusedField('price')}
                                             onBlur={() => setFocusedField(null)}
                                             placeholder="0.00"
-                                            placeholderTextColor="#9CA3AF"
+                                            placeholderTextColor="#71717A"
                                             keyboardType="numeric"
-                                            className="flex-1 text-base text-black"
+                                            className="flex-1 text-base text-black dark:text-white"
                                             style={{ minHeight: 44, paddingBottom: 10, paddingTop: 10, outlineStyle: 'none' }}
                                         />
                                     </View>
                                 </View>
 
                                 {/* Date */}
-                                <View className="flex-row items-center py-4 border-b border-gray-100">
+                                <View className="flex-row items-center py-4 border-b border-gray-100 dark:border-zinc-900">
                                     <View className="w-8 items-center mr-3">
-                                        <Ionicons name="calendar-outline" size={24} color="#262626" />
+                                        <Ionicons name="calendar-outline" size={24} color={isDark ? '#A3A3A3' : '#262626'} />
                                     </View>
                                     <Pressable onPress={() => setShowDatePicker(true)} className="flex-1">
-                                        <Text className="text-base text-black">
+                                        <Text className="text-base text-black dark:text-white">
                                             {dateOrdered.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
                                         </Text>
                                     </Pressable>
                                     {/* Today Shortcut */}
                                     <Pressable
                                         onPress={() => setDateOrdered(new Date())}
-                                        className="bg-gray-100 px-3 py-1 rounded-md"
+                                        className="bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-md"
                                     >
-                                        <Text className="text-xs font-bold text-gray-500">Today</Text>
+                                        <Text className="text-xs font-bold text-gray-500 dark:text-zinc-400">Today</Text>
                                     </Pressable>
                                 </View>
 
                                 {/* Rating - Special Row */}
-                                <View className="flex-row items-center py-4 border-b border-gray-100 justify-between">
-                                    <Text className="text-base text-gray-900 font-medium">Rating</Text>
-                                    <View className="flex-row space-x-2">
+                                <View className="flex-row items-center py-4 border-b border-gray-100 dark:border-zinc-900 justify-between">
+                                    <Text className="text-base text-gray-900 dark:text-white font-medium">Rating</Text>
+                                    <View className="flex-row gap-2">
                                         {[1, 2, 3, 4, 5].map((star) => (
                                             <Pressable key={star} onPress={() => setRating(star)}>
                                                 <Ionicons
                                                     name={star <= rating ? "star" : "star-outline"}
                                                     size={28}
-                                                    color="black"
+                                                    color={star <= rating ? "#FBBF24" : (isDark ? '#52525B' : '#CCCCCC')}
                                                 />
                                             </Pressable>
                                         ))}
                                     </View>
                                 </View>
 
+                                {/* Audience Visibility Tiers Segmented Selector */}
+                                <View className="py-4 border-b border-gray-100 dark:border-zinc-900">
+                                    <Text className="text-base text-gray-900 dark:text-white font-bold mb-3">Audience Visibility</Text>
+                                    <View className="flex-row bg-gray-100 dark:bg-zinc-800 p-1 rounded-2xl justify-between">
+                                        {[
+                                            { key: 'private', label: 'Personal', desc: 'Journal', iconName: 'lock-closed', iconType: 'ionicons' },
+                                            { key: 'shared', label: 'Shared', desc: 'Chowmates', iconName: 'people', iconType: 'ionicons' },
+                                            ...(isEditing || rating < 4 ? [] : [{ key: 'recommended', label: 'Recommend', desc: 'Notify Chowmates', iconName: 'chef-hat', iconType: 'material' }])
+                                        ].map((item) => {
+                                            const isSelected = visibility === item.key;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={item.key}
+                                                    onPress={() => setVisibility(item.key)}
+                                                    className={`flex-1 items-center py-2 px-0.5 rounded-xl ${isSelected ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
+                                                    activeOpacity={0.8}
+                                                >
+                                                    <View className="flex-row items-center gap-1.5 justify-center">
+                                                        {item.iconType === 'ionicons' ? (
+                                                            <Ionicons 
+                                                                name={item.iconName} 
+                                                                size={12} 
+                                                                color={isSelected ? (isDark ? '#FFFFFF' : '#000000') : (isDark ? '#A3A3A3' : '#6B7280')} 
+                                                            />
+                                                        ) : (
+                                                            <MaterialCommunityIcons 
+                                                                name={item.iconName} 
+                                                                size={13} 
+                                                                color={isSelected ? (isDark ? '#FB7185' : '#E11D48') : (isDark ? '#A3A3A3' : '#6B7280')} 
+                                                            />
+                                                        )}
+                                                        <Text className={`text-xs font-extrabold ${isSelected ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>
+                                                            {item.label}
+                                                        </Text>
+                                                    </View>
+                                                    <Text className={`text-[8px] mt-1 font-black uppercase tracking-wider ${isSelected ? 'text-neutral-900 dark:text-white' : 'text-gray-400 dark:text-zinc-500'}`}>
+                                                        {item.desc}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+
                                 {/* Notes / Caption */}
-                                <View className={`py-2 px-3 mt-2 rounded-lg border ${focusedField === 'notes' ? 'border-blue-500 bg-white' : 'border-gray-100 bg-gray-50/50'}`}>
+                                <View className={`py-2 px-3 mt-2 rounded-lg border ${focusedField === 'notes' ? 'border-blue-500 bg-white dark:bg-zinc-900' : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/10'}`}>
                                     <TextInput
                                         value={notes}
                                         onChangeText={setNotes}
                                         onFocus={() => setFocusedField('notes')}
                                         onBlur={() => setFocusedField(null)}
                                         placeholder="Write a caption..."
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor="#71717A"
                                         multiline
-                                        className="text-base text-black min-h-[100px]"
+                                        className="text-base text-black dark:text-white min-h-[100px]"
                                         style={{ paddingTop: 8, paddingBottom: 16, outlineStyle: 'none' }}
                                         includeFontPadding={false}
                                         textAlignVertical="top"
@@ -827,11 +886,11 @@ export default function ModalScreen() {
 
                     {step === 3 && (
                         /* Step 3: Live Feed Polaroid Card Preview */
-                        <View className="p-4 bg-gray-50/50">
+                        <View className="p-4 bg-gray-50/50 dark:bg-zinc-900/10">
                             <Text className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4 text-center mt-2">
                                 Feed Post Preview
                             </Text>
-                            <View className="bg-white rounded-3xl overflow-hidden shadow-md border border-neutral-100 mb-8">
+                            <View className="bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden shadow-md border border-neutral-100 dark:border-zinc-800 mb-8">
                                 <ReviewCard 
                                     review={{
                                         dish_name: dish,
@@ -844,7 +903,8 @@ export default function ModalScreen() {
                                         currency: currency,
                                         created_at: new Date().toISOString(),
                                         avatar_url: profile?.avatar_url,
-                                        username: profile?.username || 'You'
+                                        username: profile?.username || 'You',
+                                        visibility: visibility
                                     }} 
                                 />
                             </View>
@@ -865,15 +925,15 @@ export default function ModalScreen() {
                     >
                         <View className="flex-1 justify-end">
                             <Pressable
-                                className="flex-1 bg-black/30"
+                                className="flex-1 bg-black/60"
                                 onPress={() => setShowDatePicker(false)}
                             />
-                            <View className="bg-white pb-4">
-                                <View className="flex-row justify-between items-center p-4 border-b border-gray-100 bg-gray-50">
+                            <View className="bg-white dark:bg-zinc-950 pb-4">
+                                <View className="flex-row justify-between items-center p-4 border-b border-gray-100 dark:border-zinc-900 bg-gray-50 dark:bg-zinc-900">
                                     <Pressable onPress={() => setShowDatePicker(false)}>
-                                        <Text className="text-gray-500 text-base">Cancel</Text>
+                                        <Text className="text-gray-500 dark:text-zinc-400 text-base">Cancel</Text>
                                     </Pressable>
-                                    <Text className="font-semibold text-base">Select Date</Text>
+                                    <Text className="font-semibold text-base text-gray-900 dark:text-white">Select Date</Text>
                                     <Pressable onPress={() => setShowDatePicker(false)}>
                                         <Text className="text-blue-500 font-bold text-base">Done</Text>
                                     </Pressable>
@@ -884,7 +944,7 @@ export default function ModalScreen() {
                                     display="spinner"
                                     onChange={handleDateChange}
                                     maximumDate={new Date()}
-                                    themeVariant="light"
+                                    themeVariant={isDark ? "dark" : "light"}
                                     style={{ height: 120 }}
                                 />
                             </View>
@@ -897,7 +957,7 @@ export default function ModalScreen() {
                         display="default"
                         onChange={handleDateChange}
                         maximumDate={new Date()}
-                        themeVariant="light"
+                        themeVariant={isDark ? "dark" : "light"}
                     />
                 )
             )}

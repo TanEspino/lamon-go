@@ -1,21 +1,69 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useRef, useState, useEffect } from 'react';
+import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, useWindowDimensions, RefreshControl, ActivityIndicator } from 'react-native';
 import { useScrollToTop } from '@react-navigation/native';
 import ReviewCard from '../../components/ReviewCard';
 import { useReviews } from '../../context/ReviewsContext';
 import { useAuth } from '../../context/AuthContext';
 import { useColorScheme } from 'nativewind';
+import { supabase } from '../../lib/supabase';
 
 export default function FeedScreen() {
-    const { reviews } = useReviews();
-    const { user } = useAuth();
+    const { reviews, fetchReviews, savedReviewIds, toggleSaveReview } = useReviews();
+    const { user, profile, showToast, setActiveDiscoverUser } = useAuth();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const isLargeScreen = width >= 600;
     const flatListRef = useRef(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
+
+    const [posts, setPosts] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const lastRefreshRef = useRef(0);
+
+    // Sync Home feed posts in real-time with global reviews context without wiping buddy posts
+    useEffect(() => {
+        if (!user || !reviews) return;
+        
+        setPosts(prevPosts => {
+            // 1. Filter out user's posts that are no longer present in reviews (handles deletion)
+            const activeUserReviewIds = new Set(reviews.map(r => r.id));
+            let updated = prevPosts.filter(p => p.user_id !== user.id || activeUserReviewIds.has(p.id));
+            
+            // 2. Map of reviews from context for easy lookup
+            const reviewsMap = new Map(reviews.map(r => [r.id, r]));
+            
+            // 3. Update existing user posts in updated (handles editing)
+            updated = updated.map(p => {
+                if (p.user_id === user.id && reviewsMap.has(p.id)) {
+                    const latest = reviewsMap.get(p.id);
+                    return {
+                        ...p,
+                        dish_name: latest.dish_name,
+                        restaurant_name: latest.restaurant_name,
+                        rating: latest.rating,
+                        price: latest.price,
+                        currency: latest.currency,
+                        notes: latest.notes,
+                        photo_url: latest.photo_url,
+                        photos: latest.photos,
+                        visibility: latest.visibility
+                    };
+                }
+                return p;
+            });
+            
+            // 4. Find new reviews in context that are not in updated (handles creation)
+            const existingIds = new Set(updated.map(p => p.id));
+            const newReviews = reviews.filter(r => !existingIds.has(r.id));
+            
+            const merged = newReviews.length > 0 ? [...newReviews, ...updated] : updated;
+            return merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        });
+    }, [reviews, user?.id, profile]);
 
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -23,29 +71,188 @@ export default function FeedScreen() {
     // Automatically scroll to top when the active tab icon is tapped
     useScrollToTop(flatListRef);
 
-    // Filter reviews to only show current user's posts (since it's a personal app)
-    const myReviews = reviews.filter(r => r.user_id === user?.id);
+    const formatReviews = (data) => {
+        return (data || []).map(r => {
+            const parsedPhotos = r.image_url ? r.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+            return {
+                id: r.id,
+                user_id: r.user_id,
+                username: r.profiles?.username || r.profiles?.full_name || 'Guest',
+                avatar_url: r.profiles?.avatar_url || '',
+                restaurant_name: r.restaurant_name,
+                dish_name: r.dish_name,
+                rating: r.rating,
+                price: r.price,
+                currency: r.currency,
+                notes: r.caption,
+                photo_url: parsedPhotos[0] || '',
+                photos: parsedPhotos,
+                created_at: r.created_at,
+                visibility: r.visibility || 'shared'
+            };
+        });
+    };
+
+    const fetchBuddyIds = async () => {
+        if (!user) return [user?.id];
+        try {
+            const { data, error } = await supabase
+                .from('buddies')
+                .select('requester_id, receiver_id')
+                .eq('status', 'accepted')
+                .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+            
+            let ids = [user.id];
+            if (!error && data) {
+                data.forEach(b => {
+                    if (b.requester_id !== user.id) ids.push(b.requester_id);
+                    if (b.receiver_id !== user.id) ids.push(b.receiver_id);
+                });
+            }
+            return ids;
+        } catch (err) {
+            console.error("Error getting buddies ids:", err);
+            return [user?.id];
+        }
+    };
+
+    const loadInitialFeed = async (silent = false) => {
+        if (!user) return;
+        if (!silent) setRefreshing(true);
+        try {
+            const buddyIds = await fetchBuddyIds();
+            const { data, error } = await supabase
+                .from('reviews')
+                .select('*, profiles:user_id(username, avatar_url, full_name)')
+                .in('user_id', buddyIds)
+                .order('created_at', { ascending: false })
+                .limit(21);
+
+            if (error) throw error;
+
+            const formatted = formatReviews(data);
+            setPosts(formatted);
+            setHasMore(data.length === 21);
+        } catch (err) {
+            console.error("Failed to load feed:", err);
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    const loadMorePosts = async () => {
+        if (loadingMore || !hasMore || posts.length === 0 || !user) return;
+        setLoadingMore(true);
+        try {
+            const lastPost = posts[posts.length - 1];
+            const buddyIds = await fetchBuddyIds();
+            
+            const { data, error } = await supabase
+                .from('reviews')
+                .select('*, profiles:user_id(username, avatar_url, full_name)')
+                .in('user_id', buddyIds)
+                .lt('created_at', lastPost.created_at)
+                .order('created_at', { ascending: false })
+                .limit(21);
+
+            if (error) throw error;
+
+            const formatted = formatReviews(data);
+            setPosts(prev => [...prev, ...formatted]);
+            setHasMore(data.length === 21);
+        } catch (err) {
+            console.error("Failed to load more posts:", err);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.id) {
+            loadInitialFeed();
+        }
+    }, [user?.id]);
+    const handleManualRefresh = async () => {
+        const now = Date.now();
+        const diff = now - lastRefreshRef.current;
+        if (diff < 60000) {
+            const secondsLeft = Math.ceil((60000 - diff) / 1000);
+            if (showToast) {
+                showToast("Feed Up to Date", `Please wait ${secondsLeft}s before refreshing again! ⏳`, "success");
+            }
+            return;
+        }
+        setRefreshing(true);
+        // Reload all feed posts (buddy + own posts) and refresh context reviews
+        await Promise.all([
+            loadInitialFeed(true),
+            fetchReviews()
+        ]);
+        setRefreshing(false);
+        lastRefreshRef.current = Date.now();
+    };
+    const handleProfilePress = (authorId) => {
+        if (authorId === user?.id) {
+            router.push('/(tabs)/profile');
+        } else {
+            if (setActiveDiscoverUser) {
+                setActiveDiscoverUser(authorId);
+            }
+            router.push('/(tabs)/discover');
+        }
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
-            {/* Custom Logo Header */}
-            <View className="items-center justify-center bg-gray-100 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
+            {/* Custom Logo Header with Refresh Icon */}
+            <View className="flex-row items-center justify-between px-4 bg-gray-100 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
+                <View style={{ width: 40 }} />
                 <Image
+                    key={isDark ? 'dark' : 'light'}
                     source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                    style={{ width: 140, height: 40 }}
+                    style={{ width: 140, height: 40, alignSelf: 'center' }}
                     resizeMode="contain"
                 />
+                <TouchableOpacity 
+                    onPress={handleManualRefresh}
+                    className="p-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-850"
+                    disabled={refreshing}
+                >
+                    <Ionicons 
+                        name="refresh" 
+                        size={22} 
+                        color={refreshing ? (isDark ? '#52525B' : '#A1A1AA') : (isDark ? '#F4F4F5' : '#18181B')} 
+                    />
+                </TouchableOpacity>
             </View>
             <FlatList
                 ref={flatListRef}
-                data={myReviews}
+                data={posts}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <ReviewCard
                         review={item}
                         onRestaurantPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant_id || 'mock', name: item.restaurant_name } })}
+                        onProfilePress={() => handleProfilePress(item.user_id)}
+                        isSaved={savedReviewIds.includes(item.id)}
+                        onSavePress={() => toggleSaveReview(item.id)}
                     />
                 )}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleManualRefresh}
+                        colors={["#E11D48"]}
+                        tintColor="#E11D48"
+                    />
+                }
+                onEndReached={loadMorePosts}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={() => loadingMore ? (
+                    <View className="py-6 items-center justify-center">
+                        <ActivityIndicator size="small" color="#E11D48" />
+                    </View>
+                ) : null}
                 ListEmptyComponent={() => (
                     <View className="flex-1 items-center justify-center px-8 py-16">
                         {/* Elegant Icon in Turquoise */}
@@ -82,7 +289,7 @@ export default function FeedScreen() {
                     </View>
                 )}
                 contentContainerStyle={[
-                    myReviews.length === 0 ? { flexGrow: 1 } : {},
+                    posts.length === 0 ? { flexGrow: 1 } : {},
                     { 
                         paddingBottom: 100, 
                         width: '100%', 
@@ -127,6 +334,6 @@ export default function FeedScreen() {
                     <Ionicons name="add" size={28} color="white" />
                 </TouchableOpacity>
             )}
-        </SafeAreaView >
+        </SafeAreaView>
     );
 }

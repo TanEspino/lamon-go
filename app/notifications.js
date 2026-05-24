@@ -1,25 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, Text, TouchableOpacity, View, Animated, FlatList, Image, Alert, Platform, AppState } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useReviews } from '../context/ReviewsContext'; // To trigger feed refresh if needed
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const { user, fetchBuddyStats, clearUnseenAcceptance, showToast } = useAuth();
+    const { user, fetchBuddyStats, clearUnseenAcceptance, unseenRecommendationsCount, clearUnseenRecommendations, showToast, setActiveDiscoverUser } = useAuth();
     const { fetchReviews } = useReviews(); // Used to refetch reviews after accepting a buddy
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
 
     const [requests, setRequests] = useState([]);
     const [recentConnections, setRecentConnections] = useState([]);
+    const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [clickedNotificationIds, setClickedNotificationIds] = useState([]);
+
+    // Load clicked notification IDs from AsyncStorage on mount
+    useEffect(() => {
+        const loadClickedIds = async () => {
+            try {
+                const stored = await AsyncStorage.getItem('clicked_notification_ids');
+                if (stored) {
+                    setClickedNotificationIds(JSON.parse(stored));
+                }
+            } catch (e) {
+                console.error("Error loading clicked notifications:", e);
+            }
+        };
+        loadClickedIds();
+    }, []);
+
+    const markAsClicked = async (id) => {
+        try {
+            if (clickedNotificationIds.includes(id)) return;
+            const updated = [...clickedNotificationIds, id];
+            setClickedNotificationIds(updated);
+            await AsyncStorage.setItem('clicked_notification_ids', JSON.stringify(updated));
+        } catch (e) {
+            console.error("Error saving clicked notification:", e);
+        }
+    };
+
+    const handleProfilePress = (buddyId) => {
+        if (buddyId === user?.id) {
+            router.push('/(tabs)/profile');
+        } else {
+            if (setActiveDiscoverUser) {
+                setActiveDiscoverUser(buddyId);
+            }
+            router.push('/(tabs)/discover');
+        }
+    };
 
     const requestsRef = useRef([]);
     const recentConnectionsRef = useRef([]);
+    const recommendationsRef = useRef([]);
 
     useEffect(() => {
         requestsRef.current = requests;
@@ -28,6 +70,10 @@ export default function NotificationsScreen() {
     useEffect(() => {
         recentConnectionsRef.current = recentConnections;
     }, [recentConnections]);
+
+    useEffect(() => {
+        recommendationsRef.current = recommendations;
+    }, [recommendations]);
 
     // Animation values
     const slideAnim = useRef(new Animated.Value(150)).current;
@@ -42,6 +88,9 @@ export default function NotificationsScreen() {
         fetchNotifications();
         if (clearUnseenAcceptance) {
             clearUnseenAcceptance();
+        }
+        if (clearUnseenRecommendations) {
+            clearUnseenRecommendations();
         }
 
         if (!user?.id) return;
@@ -144,18 +193,59 @@ export default function NotificationsScreen() {
 
             if (acceptedErr) throw acceptedErr;
 
-            // Transform accepted connections to highlight the other user
+            // Transform accepted connections and extract buddyIds for recommendations
+            const buddyIds = [];
             const processedAccepted = (acceptedData || []).map(item => {
                 const isRequester = item.requester_id === user.id;
                 const buddyProfile = isRequester ? item.receiver : item.requester;
+                if (buddyProfile) {
+                    buddyIds.push(buddyProfile.id);
+                }
                 return {
                     id: item.id,
                     created_at: item.created_at,
                     status: 'accepted',
                     profile: buddyProfile,
-                    isOutgoingAcceptance: isRequester // True if the other person accepted OUR request
+                    isOutgoingAcceptance: isRequester
                 };
             }).filter(item => item.profile !== null);
+
+            // 3. Fetch recent recommended posts from ALL accepted buddies
+            let processedRecommendations = [];
+            const { data: allBuddies, error: allBuddiesErr } = await supabase
+                .from('buddies')
+                .select('requester_id, receiver_id')
+                .eq('status', 'accepted')
+                .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+            if (!allBuddiesErr && allBuddies) {
+                const allBuddyIds = [];
+                allBuddies.forEach(b => {
+                    if (b.requester_id !== user.id) allBuddyIds.push(b.requester_id);
+                    if (b.receiver_id !== user.id) allBuddyIds.push(b.receiver_id);
+                });
+
+                if (allBuddyIds.length > 0) {
+                    const { data: recData, error: recErr } = await supabase
+                        .from('reviews')
+                        .select('id, created_at, dish_name, user_id, profiles:user_id(id, username, full_name, avatar_url)')
+                        .eq('visibility', 'recommended')
+                        .in('user_id', allBuddyIds)
+                        .order('created_at', { ascending: false })
+                        .limit(15);
+
+                    if (!recErr && recData) {
+                        processedRecommendations = recData.map(item => ({
+                            id: `rec_${item.id}`,
+                            postId: item.id,
+                            created_at: item.created_at,
+                            status: 'recommended',
+                            profile: item.profiles,
+                            dish_name: item.dish_name
+                        }));
+                    }
+                }
+            }
 
             // Blink-Free Guard: Compare array contents strictly by row IDs and statuses
             const arraysAreEqual = (arr1, arr2) => {
@@ -169,6 +259,9 @@ export default function NotificationsScreen() {
             }
             if (!arraysAreEqual(processedAccepted, recentConnectionsRef.current)) {
                 setRecentConnections(processedAccepted);
+            }
+            if (!arraysAreEqual(processedRecommendations, recommendationsRef.current)) {
+                setRecommendations(processedRecommendations);
             }
         } catch (error) {
             console.error("Error fetching notifications:", error);
@@ -258,6 +351,10 @@ export default function NotificationsScreen() {
             data.push({ id: 'pending-header', isHeader: true, title: 'Pending Requests' });
             data.push(...requests.map(r => ({ ...r, type: 'pending' })));
         }
+        if (recommendations.length > 0) {
+            data.push({ id: 'recommendations-header', isHeader: true, title: 'Chowmate Recommendations' });
+            data.push(...recommendations.map(r => ({ ...r, type: 'recommended' })));
+        }
         if (recentConnections.length > 0) {
             data.push({ id: 'recent-header', isHeader: true, title: 'Recent Activity' });
             data.push(...recentConnections.map(c => ({ ...c, type: 'accepted' })));
@@ -315,12 +412,86 @@ export default function NotificationsScreen() {
             );
         }
 
+        if (item.type === 'recommended') {
+            const profile = item.profile;
+            if (!profile) return null;
+            const isClicked = clickedNotificationIds.includes(item.id);
+
+            return (
+                <TouchableOpacity 
+                    onPress={async () => {
+                        // 1. Mark as clicked locally & persist in AsyncStorage
+                        await markAsClicked(item.id);
+                        
+                        // 2. Clear app-level unseen recommendations count
+                        if (clearUnseenRecommendations) {
+                            await clearUnseenRecommendations();
+                        }
+                        
+                        // 3. Clear OS-level push notifications from device tray
+                        if (Platform.OS !== 'web') {
+                            try {
+                                await Notifications.dismissAllNotificationsAsync();
+                            } catch (e) {
+                                console.log("Failed to clear OS tray notifications:", e);
+                            }
+                        }
+                        
+                        // 4. Redirect to the single post view
+                        router.push({
+                            pathname: '/single-post',
+                            params: { id: item.postId }
+                        });
+                    }}
+                    className={`flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50 px-3.5 -mx-3.5 ${!isClicked ? 'bg-rose-500/[0.04] dark:bg-rose-500/[0.06] border-l-[4px] border-l-rose-500' : 'bg-transparent border-l-[4px] border-l-transparent'}`}
+                    activeOpacity={0.75}
+                >
+                    <View className="flex-row items-center flex-1 pr-2">
+                        <View className="relative">
+                            <Image
+                                source={{ uri: profile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80' }}
+                                className="w-11 h-11 rounded-full mr-3 border border-gray-200 dark:border-zinc-700"
+                            />
+                            <View className="absolute bottom-0 right-2 bg-amber-500 rounded-full p-0.5 border border-white dark:border-zinc-950">
+                                <MaterialCommunityIcons name="chef-hat" size={10} color="white" />
+                            </View>
+                        </View>
+                        <View className="flex-shrink flex-1">
+                            <Text className={`font-bold text-sm ${!isClicked ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`} numberOfLines={1}>
+                                @{profile.username || 'Guest'}
+                            </Text>
+                            <Text className={`text-xs mt-0.5 ${!isClicked ? 'text-gray-600 dark:text-zinc-300' : 'text-gray-400 dark:text-zinc-500'}`} numberOfLines={1}>
+                                recommended: <Text className={`font-semibold ${!isClicked ? 'text-rose-500' : 'text-rose-500/70'}`}>{item.dish_name}</Text> 👨‍🍳
+                            </Text>
+                        </View>
+                    </View>
+                    <View className="flex-row items-center">
+                        {!isClicked && (
+                            <View className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-2.5 shadow-sm" />
+                        )}
+                        <Ionicons name="chevron-forward" size={16} color={!isClicked ? '#E11D48' : '#9CA3AF'} />
+                    </View>
+                </TouchableOpacity>
+            );
+        }
+
         if (item.type === 'accepted') {
             const profile = item.profile;
             if (!profile) return null;
+            const isClicked = clickedNotificationIds.includes(item.id);
 
             return (
-                <View className="flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50">
+                <TouchableOpacity 
+                    onPress={() => {
+                        // Mark as clicked
+                        markAsClicked(item.id);
+                        
+                        // Redirect to buddy's Discover vault
+                        handleProfilePress(profile.id);
+                    }}
+                    className={`flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50 px-3.5 -mx-3.5 ${!isClicked ? 'bg-teal-500/[0.04] dark:bg-teal-500/[0.06] border-l-[4px] border-l-teal-500' : 'bg-transparent border-l-[4px] border-l-transparent'}`}
+                    activeOpacity={0.75}
+                >
                     <View className="flex-row items-center flex-1 pr-2">
                         <View className="relative">
                             <Image
@@ -332,17 +503,23 @@ export default function NotificationsScreen() {
                             </View>
                         </View>
                         <View className="flex-shrink">
-                            <Text className="font-bold text-gray-900 dark:text-white text-sm" numberOfLines={1}>
+                            <Text className={`font-bold text-sm ${!isClicked ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`} numberOfLines={1}>
                                 @{profile.username || 'Guest'}
                             </Text>
-                            <Text className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                            <Text className={`text-xs mt-0.5 ${!isClicked ? 'text-gray-600 dark:text-zinc-300' : 'text-gray-400 dark:text-zinc-500'}`}>
                                 {item.isOutgoingAcceptance 
                                     ? "accepted your request! Let's eat! 🍕" 
                                     : "is now your Chowmate! Let's eat! 🍕"}
                             </Text>
                         </View>
                     </View>
-                </View>
+                    <View className="flex-row items-center">
+                        {!isClicked && (
+                            <View className="w-2.5 h-2.5 rounded-full bg-teal-500 mr-2.5 shadow-sm" />
+                        )}
+                        <Ionicons name="chevron-forward" size={16} color={!isClicked ? '#14B8A6' : '#9CA3AF'} />
+                    </View>
+                </TouchableOpacity>
             );
         }
 

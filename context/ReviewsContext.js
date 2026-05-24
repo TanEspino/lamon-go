@@ -5,9 +5,52 @@ import { supabase } from '../lib/supabase';
 const ReviewsContext = createContext();
 
 export function ReviewsProvider({ children }) {
-    const { user, profile } = useAuth();
+    const { user, profile, fetchBuddyStats } = useAuth();
     const [reviews, setReviews] = useState([]);
+    const [savedReviewIds, setSavedReviewIds] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const fetchSavedReviews = useCallback(async () => {
+        if (!user) {
+            setSavedReviewIds([]);
+            return;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('saved_posts')
+                .select('post_id')
+                .eq('user_id', user.id);
+            if (error) throw error;
+            setSavedReviewIds(data.map(d => d.post_id));
+        } catch (error) {
+            console.error('Error fetching saved reviews:', error);
+        }
+    }, [user?.id]);
+
+    const toggleSaveReview = async (postId) => {
+        if (!user) throw new Error("Must be logged in to save posts.");
+        const isAlreadySaved = savedReviewIds.includes(postId);
+        try {
+            if (isAlreadySaved) {
+                const { error } = await supabase
+                    .from('saved_posts')
+                    .delete()
+                    .eq('user_id', user.id)
+                    .eq('post_id', postId);
+                if (error) throw error;
+                setSavedReviewIds(prev => prev.filter(id => id !== postId));
+            } else {
+                const { error } = await supabase
+                    .from('saved_posts')
+                    .insert({ user_id: user.id, post_id: postId });
+                if (error) throw error;
+                setSavedReviewIds(prev => [...prev, postId]);
+            }
+        } catch (error) {
+            console.error('Error toggling review save:', error);
+            throw error;
+        }
+    };
 
     const fetchReviews = useCallback(async () => {
         if (!user) {
@@ -57,10 +100,14 @@ export function ReviewsProvider({ children }) {
                     photo_url: parsedPhotos[0] || '',
                     photos: parsedPhotos,
                     created_at: r.created_at,
+                    visibility: r.visibility || 'shared',
                 };
             });
             
             setReviews(formattedReviews);
+            if (user?.id && fetchBuddyStats) {
+                fetchBuddyStats(user.id, true);
+            }
         } catch (error) {
             console.error('Error fetching reviews:', error);
         } finally {
@@ -72,11 +119,13 @@ export function ReviewsProvider({ children }) {
     useEffect(() => {
         if (user?.id) {
             fetchReviews();
+            fetchSavedReviews();
         } else {
             setReviews([]);
+            setSavedReviewIds([]);
             setLoading(false);
         }
-    }, [user?.id, fetchReviews]);
+    }, [user?.id, fetchReviews, fetchSavedReviews]);
 
     const addReview = async (newReview) => {
         if (!user) throw new Error("Must be logged in to post.");
@@ -91,6 +140,7 @@ export function ReviewsProvider({ children }) {
                 currency: newReview.currency,
                 caption: newReview.notes,
                 image_url: newReview.photo_url,
+                visibility: newReview.visibility || 'shared',
             };
             
             const { data, error } = await supabase
@@ -117,6 +167,7 @@ export function ReviewsProvider({ children }) {
                 photo_url: parsedPhotos[0] || '',
                 photos: parsedPhotos,
                 created_at: data.created_at,
+                visibility: data.visibility || 'shared',
             };
             
             setReviews(prev => [formatted, ...prev]);
@@ -137,6 +188,7 @@ export function ReviewsProvider({ children }) {
                 currency: updatedReview.currency,
                 caption: updatedReview.notes,
                 image_url: updatedReview.photo_url,
+                visibility: updatedReview.visibility || 'shared',
             };
 
             const { data, error } = await supabase
@@ -163,6 +215,7 @@ export function ReviewsProvider({ children }) {
                 photo_url: parsedPhotos[0] || '',
                 photos: parsedPhotos,
                 created_at: data.created_at,
+                visibility: data.visibility || 'shared',
             };
 
             setReviews(prev => prev.map(r => r.id === data.id ? formatted : r));
@@ -201,7 +254,7 @@ export function ReviewsProvider({ children }) {
     };
 
     return (
-        <ReviewsContext.Provider value={{ reviews, addReview, updateReview, deleteReview, fetchReviews, loading }}>
+        <ReviewsContext.Provider value={{ reviews, addReview, updateReview, deleteReview, fetchReviews, loading, savedReviewIds, toggleSaveReview }}>
             {children}
         </ReviewsContext.Provider>
     );

@@ -11,7 +11,7 @@ import { supabase } from '../../lib/supabase';
 export default function ProfileScreen() {
     const router = useRouter();
     const { reviews, deleteReview } = useReviews();
-    const { profile, user, signOut, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount } = useAuth();
+    const { profile, user, signOut, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, unseenRecommendationsCount } = useAuth();
 
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -277,8 +277,9 @@ export default function ProfileScreen() {
 
                             {/* Centered Logo */}
                             <Image
+                                key={isDark ? 'dark' : 'light'}
                                 source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                                style={{ width: 110, height: 32 }}
+                                style={{ width: 110, height: 32, alignSelf: 'center' }}
                                 resizeMode="contain"
                             />
 
@@ -291,9 +292,9 @@ export default function ProfileScreen() {
                                     accessibilityLabel="Notifications"
                                 >
                                     <Ionicons name="notifications-outline" size={26} color={isDark ? 'white' : 'black'} />
-                                    {(pendingCount + unseenAcceptanceCount) > 0 && (
+                                    {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
                                         <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center">
-                                            <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount}</Text>
+                                            <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
