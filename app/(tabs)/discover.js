@@ -56,6 +56,10 @@ export default function DiscoverScreen() {
     const [hasRecommendedPosts, setHasRecommendedPosts] = useState(false);
     const headerCollapseAnim = useRef(new Animated.Value(1)).current; // 1 = expanded, 0 = collapsed
 
+    const [scrollX, setScrollX] = useState(0);
+    const [contentWidth, setContentWidth] = useState(0);
+    const [layoutWidth, setLayoutWidth] = useState(0);
+
     // Looping sequence for swipable switcher hint (pulsing & bouncing)
     const swipeAnim = useRef(new Animated.Value(0)).current;
 
@@ -83,10 +87,25 @@ export default function DiscoverScreen() {
         outputRange: [-3, 3]
     });
 
+    const swipeTranslateXLeft = swipeAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [3, -3]
+    });
+
     const swipeOpacity = swipeAnim.interpolate({
         inputRange: [0, 1],
         outputRange: [0.6, 1.0]
     });
+
+    const handleScrollLeft = () => {
+        const targetX = Math.max(0, scrollX - 180);
+        switcherScrollViewRef.current?.scrollTo({ x: targetX, animated: true });
+    };
+
+    const handleScrollRight = () => {
+        const targetX = Math.min(contentWidth - layoutWidth, scrollX + 180);
+        switcherScrollViewRef.current?.scrollTo({ x: targetX, animated: true });
+    };
 
     const handleSwipeArrowPress = () => {
         switcherScrollViewRef.current?.scrollTo({ x: 180, animated: true });
@@ -412,19 +431,25 @@ export default function DiscoverScreen() {
             const targetId = activeDiscoverUser;
             setActiveDiscoverUser(null); // Reset immediately
 
+            // Refresh buddies list to guarantee newly accepted buddies are sync'd
+            initBuddiesAndLenses();
+
             if (targetId === user?.id) {
                 setActiveLens('me');
             } else {
-                // Check if already in switcher, if not, fetch and bump them
-                const exist = buddiesList.some(b => b.id === targetId) || bumpedChowmates.some(b => b.id === targetId);
-                if (!exist) {
-                    supabase.from('profiles').select('*').eq('id', targetId).single()
-                        .then(({ data }) => {
-                            if (data) {
-                                setBumpedChowmates(prev => [data, ...prev]);
-                            }
-                        });
-                }
+                // Force load buddy profile into switcher to prevent rendering delay
+                supabase.from('profiles').select('*').eq('id', targetId).single()
+                    .then(({ data }) => {
+                        if (data) {
+                            setBumpedChowmates(prev => {
+                                const exist = prev.some(p => p.id === targetId);
+                                if (!exist) {
+                                    return [data, ...prev];
+                                }
+                                return prev;
+                            });
+                        }
+                    });
                 setActiveLens(`buddy_${targetId}`);
             }
         }
@@ -444,13 +469,11 @@ export default function DiscoverScreen() {
         if (activeLens.startsWith('buddy_')) {
             const buddyId = activeLens.split('_')[1];
             const buddyProfile = buddiesList.find(b => b.id === buddyId) || bumpedChowmates.find(b => b.id === buddyId);
-            if (buddyProfile) {
-                list.push({ 
-                    id: `buddy_${buddyId}`, 
-                    label: buddyProfile.username || buddyProfile.full_name, 
-                    avatar: buddyProfile.avatar_url 
-                });
-            }
+            list.push({ 
+                id: `buddy_${buddyId}`, 
+                label: buddyProfile ? (buddyProfile.username || buddyProfile.full_name) : 'Loading...', 
+                avatar: buddyProfile ? buddyProfile.avatar_url : null 
+            });
         }
 
         return list;
@@ -555,7 +578,15 @@ export default function DiscoverScreen() {
                     resizeMode="cover"
                 />
                 {item.visibility === 'recommended' && (
-                    <View className="absolute top-1 right-1 bg-amber-400 p-0.5 rounded-full shadow-sm">
+                    <View 
+                        className="bg-amber-400 p-0.5 rounded-full shadow-sm"
+                        style={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            zIndex: 10
+                        }}
+                    >
                         <Ionicons name="star" size={10} color="black" />
                     </View>
                 )}
@@ -609,9 +640,11 @@ export default function DiscoverScreen() {
         outputRange: [0, 76]
     });
 
+    const SEARCH_HEADER_HEIGHT = Platform.OS === 'web' ? 142 : 136;
+
     const searchHeaderHeight = headerCollapseAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, 150]
+        outputRange: [0, SEARCH_HEADER_HEIGHT]
     });
 
     const profileHeaderTranslateY = headerCollapseAnim.interpolate({
@@ -621,7 +654,7 @@ export default function DiscoverScreen() {
 
     const searchHeaderTranslateY = headerCollapseAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [-150, 0]
+        outputRange: [-SEARCH_HEADER_HEIGHT, 0]
     });
 
     return (
@@ -646,12 +679,16 @@ export default function DiscoverScreen() {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{ paddingHorizontal: 12, paddingRight: 40 }}
                         onScroll={(e) => {
-                            if (e.nativeEvent.contentOffset.x > 10) {
+                            const x = e.nativeEvent.contentOffset.x;
+                            setScrollX(x);
+                            if (x > 10) {
                                 setHasScrolledSwitcher(true);
                             } else {
                                 setHasScrolledSwitcher(false);
                             }
                         }}
+                        onContentSizeChange={(w, h) => setContentWidth(w)}
+                        onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}
                         scrollEventThrottle={16}
                     >
                         {/* 0.5. Active Selected Chowmate Lens (At the LEFT most, before ALL) */}
@@ -684,27 +721,53 @@ export default function DiscoverScreen() {
                         {/* 5. My Recos (if active/present) */}
                         {switcherLenses.find(l => l.id === 'recommended') && renderLensButton(switcherLenses.find(l => l.id === 'recommended'))}
                     </ScrollView>
-                    {!hasScrolledSwitcher && (
-                        <View 
-                            className="absolute right-0 top-0 bottom-0 w-16 justify-center items-end pr-3" 
-                            pointerEvents="box-none" 
-                            style={{ zIndex: 10, elevation: 4 }}
+                    {scrollX > 10 && (
+                        <TouchableOpacity
+                            onPress={handleScrollLeft}
+                            activeOpacity={0.8}
+                            style={{ 
+                                position: 'absolute',
+                                left: 12,
+                                top: 11,
+                                zIndex: 10,
+                                elevation: 4
+                            }}
                         >
-                            <TouchableOpacity
-                                onPress={handleSwipeArrowPress}
-                                activeOpacity={0.8}
+                            <Animated.View 
+                                className="shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
+                                style={{ 
+                                    opacity: swipeOpacity,
+                                    transform: [{ translateX: swipeTranslateXLeft }],
+                                    backgroundColor: '#40E0D0'
+                                }}
                             >
-                                <Animated.View 
-                                    className="bg-turquoise shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
-                                    style={{ 
-                                        opacity: swipeOpacity,
-                                        transform: [{ translateX: swipeTranslateX }]
-                                    }}
-                                >
-                                    <Ionicons name="chevron-forward" size={18} color="#0F172A" />
-                                </Animated.View>
-                            </TouchableOpacity>
-                        </View>
+                                <Ionicons name="chevron-back" size={18} color="#0F172A" />
+                            </Animated.View>
+                        </TouchableOpacity>
+                    )}
+                    {contentWidth > layoutWidth && scrollX < contentWidth - layoutWidth - 10 && (
+                        <TouchableOpacity
+                            onPress={handleScrollRight}
+                            activeOpacity={0.8}
+                            style={{ 
+                                position: 'absolute',
+                                right: 12,
+                                top: 11,
+                                zIndex: 10,
+                                elevation: 4
+                            }}
+                        >
+                            <Animated.View 
+                                className="shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
+                                style={{ 
+                                    opacity: swipeOpacity,
+                                    transform: [{ translateX: swipeTranslateX }],
+                                    backgroundColor: '#40E0D0'
+                                }}
+                            >
+                                <Ionicons name="chevron-forward" size={18} color="#0F172A" />
+                            </Animated.View>
+                        </TouchableOpacity>
                     )}
                 </View>
 
@@ -883,9 +946,9 @@ export default function DiscoverScreen() {
                             <View className="bg-gray-50 dark:bg-zinc-800 p-6 rounded-full mb-4">
                                 <Ionicons name="search-outline" size={48} color={isDark ? '#71717A' : '#9CA3AF'} />
                             </View>
-                            <Text className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">No Vault Entries Found</Text>
+                            <Text className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">No Hits Found</Text>
                             <Text className="text-gray-400 dark:text-zinc-500 text-center text-sm">
-                                {searchQuery ? `We couldn't find reviews matching "${searchQuery}" in this lens.` : "This vault doesn't contain any dishes yet. Start loggin' adventures!"}
+                                {searchQuery ? `We couldn't find any recommendations for "${searchQuery}" in this vault.` : "No dishes here yet. Time to start building your hitlist."}
                             </Text>
                         </View>
                     )}
@@ -898,8 +961,19 @@ export default function DiscoverScreen() {
             {showScrollTop && viewMode === 'list' && (
                 <TouchableOpacity
                     onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
-                    className="absolute bottom-24 right-5 bg-turquoise w-12 h-12 rounded-full items-center justify-center shadow-xl border border-teal-400 dark:border-teal-300"
-                    style={{ zIndex: 1000, elevation: 6 }}
+                    className="bg-turquoise border border-teal-400 dark:border-teal-300"
+                    style={{ 
+                        position: 'absolute',
+                        bottom: 96,
+                        right: 20,
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                        elevation: 6
+                    }}
                     activeOpacity={0.8}
                 >
                     <Ionicons name="arrow-up" size={22} color="#0F172A" />
@@ -908,27 +982,39 @@ export default function DiscoverScreen() {
 
             {/* Custom Interactive Bottom Sheet Modal for [More] Chowmates */}
             {showMoreSheet && (
-                <View className="absolute inset-0" style={{ zIndex: 99999 }}>
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
                     {/* Backdrop */}
-                    <Pressable onPress={closeMoreSheet} className="absolute inset-0">
-                        <Animated.View style={{ opacity: sheetOpacityAnim }} className="w-full h-full bg-black/60" />
+                    <Pressable onPress={closeMoreSheet} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                        <Animated.View 
+                            style={{ 
+                                opacity: sheetOpacityAnim, 
+                                width: '100%', 
+                                height: '100%', 
+                                backgroundColor: 'rgba(0, 0, 0, 0.6)' 
+                            }} 
+                        />
                     </Pressable>
 
                     {/* Animated Sheet Card */}
                     <Animated.View 
                         style={{ 
+                            position: 'absolute',
+                            bottom: 0,
                             transform: [{ translateY: sheetSlideAnim }],
                             height: '55%',
                             width: '100%',
                             maxWidth: 600,
                             alignSelf: 'center',
+                            backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                            borderTopLeftRadius: 28,
+                            borderTopRightRadius: 28,
+                            overflow: 'hidden',
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: -4 },
                             shadowOpacity: 0.1,
                             shadowRadius: 10,
                             elevation: 10
                         }}
-                        className="absolute bottom-0 bg-white dark:bg-zinc-900 rounded-t-[28px] overflow-hidden"
                     >
                         {/* Grab bar */}
                         <View className="items-center py-3">

@@ -11,7 +11,7 @@ import { supabase } from '../../lib/supabase';
 export default function ProfileScreen() {
     const router = useRouter();
     const { reviews, deleteReview } = useReviews();
-    const { profile, user, signOut, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, unseenRecommendationsCount } = useAuth();
+    const { profile, user, signOut, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, unseenRecommendationsCount, setActiveDiscoverUser } = useAuth();
 
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -237,8 +237,28 @@ export default function ProfileScreen() {
                                 resizeMode="cover"
                             />
                             {review.photos && review.photos.length > 1 && (
-                                <View className="absolute top-1 right-1">
+                                <View 
+                                    style={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        left: 4,
+                                        zIndex: 10
+                                    }}
+                                >
                                     <Ionicons name="images" size={16} color="white" style={{ textShadowColor: 'black', textShadowRadius: 1 }} />
+                                </View>
+                            )}
+                            {review.visibility === 'recommended' && (
+                                <View 
+                                    className="bg-amber-400 p-0.5 rounded-full shadow-sm"
+                                    style={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        zIndex: 10
+                                    }}
+                                >
+                                    <Ionicons name="star" size={10} color="black" />
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -561,39 +581,74 @@ export default function ProfileScreen() {
                                             borderColor: isDark ? '#1C1C1E' : '#F3F4F6' 
                                         }}
                                     >
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 }}>
-                                            <View style={{ padding: 2, borderRadius: 9999, borderWidth: 1.5, borderColor: item.status === 'pending' ? (item.isOutgoingPending ? '#F59E0B' : '#06B6D4') : '#40E0D0', marginRight: 12 }}>
-                                                <Image
-                                                    source={{ uri: item.profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
-                                                    style={{ width: 44, height: 44, borderRadius: 22 }}
-                                                />
-                                            </View>
-                                            <View style={{ flexShrink: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        {item.status === 'accepted' ? (
+                                            <TouchableOpacity 
+                                                onPress={() => {
+                                                    setShowBuddiesModal(false);
+                                                    if (setActiveDiscoverUser) {
+                                                        setActiveDiscoverUser(item.profile.id);
+                                                    }
+                                                    router.push('/(tabs)/discover');
+                                                }}
+                                                activeOpacity={0.7}
+                                                style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 }}
+                                            >
+                                                <View style={{ padding: 2, borderRadius: 9999, borderWidth: 1.5, borderColor: '#40E0D0', marginRight: 12 }}>
+                                                    <Image
+                                                        source={{ uri: item.profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
+                                                        style={{ width: 44, height: 44, borderRadius: 22 }}
+                                                    />
+                                                </View>
+                                                <View style={{ flexShrink: 1 }}>
                                                     <Text 
                                                         style={{ fontSize: 15, fontWeight: '800', color: isDark ? '#FFFFFF' : '#111827' }}
                                                         numberOfLines={1}
                                                     >
                                                         @{item.profile.username || 'Guest'}
                                                     </Text>
-                                                    {item.status === 'pending' && (
+                                                    {item.profile.full_name && (
+                                                        <Text 
+                                                            style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.profile.full_name}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 }}>
+                                                <View style={{ padding: 2, borderRadius: 9999, borderWidth: 1.5, borderColor: item.isOutgoingPending ? '#F59E0B' : '#06B6D4', marginRight: 12 }}>
+                                                    <Image
+                                                        source={{ uri: item.profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
+                                                        style={{ width: 44, height: 44, borderRadius: 22 }}
+                                                    />
+                                                </View>
+                                                <View style={{ flexShrink: 1 }}>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                        <Text 
+                                                            style={{ fontSize: 15, fontWeight: '800', color: isDark ? '#FFFFFF' : '#111827' }}
+                                                            numberOfLines={1}
+                                                        >
+                                                            @{item.profile.username || 'Guest'}
+                                                        </Text>
                                                         <View style={{ backgroundColor: item.isOutgoingPending ? (isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.08)') : (isDark ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.08)'), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 }}>
                                                             <Text style={{ fontSize: 9, fontWeight: '700', color: item.isOutgoingPending ? '#F59E0B' : '#06B6D4' }}>
                                                                 {item.isOutgoingPending ? 'Sent' : 'Received'}
                                                             </Text>
                                                         </View>
+                                                    </View>
+                                                    {item.profile.full_name && (
+                                                        <Text 
+                                                            style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.profile.full_name}
+                                                        </Text>
                                                     )}
                                                 </View>
-                                                {item.profile.full_name && (
-                                                    <Text 
-                                                        style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
-                                                        numberOfLines={1}
-                                                    >
-                                                        {item.profile.full_name}
-                                                    </Text>
-                                                )}
                                             </View>
-                                        </View>
+                                        )}
 
                                         {/* Action Button depending on Status & Direction */}
                                         {item.status === 'pending' ? (

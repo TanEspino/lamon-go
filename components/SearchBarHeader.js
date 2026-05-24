@@ -25,9 +25,9 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
     return (
         <View className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 z-50">
             {/* Search Controls Container with its own padding */}
-            <View className="px-4 pb-3 pt-2">
+            <View className="px-4 pb-1 pt-1">
                 {/* Search Type Toggle */}
-            <View className="flex-row mb-3 bg-gray-200 dark:bg-zinc-900 p-1 rounded-xl">
+            <View className="flex-row mb-2 bg-gray-200 dark:bg-zinc-900 p-1 rounded-xl">
                 <TouchableOpacity
                     onPress={() => setSearchType('dish')}
                     className={`flex-1 py-1.5 rounded-lg items-center ${searchType === 'dish' ? 'bg-white dark:bg-zinc-800' : ''}`}
@@ -43,7 +43,7 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
             </View>
  
             {/* Search Bar Container */}
-            <View className="z-50 relative mb-4">
+            <View className="z-50 relative mb-2">
                 <View className={`flex-row items-center bg-white dark:bg-zinc-900 border shadow-sm rounded-xl px-4 py-2 ${isFocused ? 'border-blue-500' : 'border-gray-200 dark:border-zinc-800'}`}>
                     <Ionicons name="search" size={20} color={isFocused ? "#3B82F6" : (isDark ? "#71717A" : "#9CA3AF")} />
                     <TextInput
@@ -101,7 +101,7 @@ export default function SearchBarHeader({ searchQuery, setSearchQuery, ratingFil
             </View>
  
             {/* Rating Filter Chips */}
-            <View className="flex-row justify-between mb-2 z-10">
+            <View className="flex-row justify-between mb-0 z-10">
                 <TouchableOpacity
                     onPress={() => setRatingFilter(null)}
                     className={`px-4 py-1.5 rounded-full border ${ratingFilter === null ? 'bg-black dark:bg-zinc-100 border-black dark:border-zinc-100' : 'bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700'}`}

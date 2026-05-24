@@ -320,8 +320,16 @@ export default function FeedScreen() {
             {!isLargeScreen && (
                 <TouchableOpacity 
                     onPress={() => router.push('/modal')}
-                    className="absolute bottom-6 right-6 bg-[#E11D48] w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                    className="bg-[#E11D48]"
                     style={{ 
+                        position: 'absolute',
+                        bottom: 24,
+                        right: 24,
+                        width: 56,
+                        height: 56,
+                        borderRadius: 28,
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         elevation: 6,
                         shadowColor: '#E11D48',
                         shadowOffset: { width: 0, height: 4 },

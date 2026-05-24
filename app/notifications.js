@@ -49,13 +49,26 @@ export default function NotificationsScreen() {
     };
 
     const handleProfilePress = (buddyId) => {
+        if (!buddyId) return;
         if (buddyId === user?.id) {
-            router.push('/(tabs)/profile');
+            Animated.parallel([
+                Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
+                Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+            ]).start(() => {
+                if (router.canGoBack()) router.back();
+                router.push('/(tabs)/profile');
+            });
         } else {
             if (setActiveDiscoverUser) {
                 setActiveDiscoverUser(buddyId);
             }
-            router.push('/(tabs)/discover');
+            Animated.parallel([
+                Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
+                Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+            ]).start(() => {
+                if (router.canGoBack()) router.back();
+                router.push('/(tabs)/discover');
+            });
         }
     };
 
@@ -485,9 +498,6 @@ export default function NotificationsScreen() {
                     onPress={() => {
                         // Mark as clicked
                         markAsClicked(item.id);
-                        
-                        // Redirect to buddy's Discover vault
-                        handleProfilePress(profile.id);
                     }}
                     className={`flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50 px-3.5 -mx-3.5 ${!isClicked ? 'bg-teal-500/[0.04] dark:bg-teal-500/[0.06] border-l-[4px] border-l-teal-500' : 'bg-transparent border-l-[4px] border-l-transparent'}`}
                     activeOpacity={0.75}
@@ -517,7 +527,6 @@ export default function NotificationsScreen() {
                         {!isClicked && (
                             <View className="w-2.5 h-2.5 rounded-full bg-teal-500 mr-2.5 shadow-sm" />
                         )}
-                        <Ionicons name="chevron-forward" size={16} color={!isClicked ? '#14B8A6' : '#9CA3AF'} />
                     </View>
                 </TouchableOpacity>
             );

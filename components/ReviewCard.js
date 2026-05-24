@@ -156,7 +156,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
             <View className="px-4">
                 <View 
                     onLayout={handleLayout}
-                    className={`rounded-3xl overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm relative w-full aspect-[4/5] ${isRecommended ? 'border-2 border-amber-400 dark:border-amber-500' : ''}`}
+                    className={`rounded-3xl overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm relative w-full aspect-square ${isRecommended ? 'border-2 border-amber-400 dark:border-amber-500' : ''}`}
                 >
                     {photos.length > 0 ? (
                         <View className="w-full h-full relative">
