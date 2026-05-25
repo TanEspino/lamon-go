@@ -657,6 +657,30 @@ export default function DiscoverScreen() {
         outputRange: [-SEARCH_HEADER_HEIGHT, 0]
     });
 
+    const SWITCHER_HEADER_HEIGHT = 64;
+
+    const switcherHeaderHeight = headerCollapseAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, SWITCHER_HEADER_HEIGHT]
+    });
+
+    const switcherHeaderTranslateY = headerCollapseAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-SWITCHER_HEADER_HEIGHT, 0]
+    });
+
+    const TOGGLE_HEADER_HEIGHT = 54;
+
+    const toggleHeaderHeight = headerCollapseAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, TOGGLE_HEADER_HEIGHT]
+    });
+
+    const toggleHeaderTranslateY = headerCollapseAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-TOGGLE_HEADER_HEIGHT, 0]
+    });
+
     return (
         <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
             <View style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }}>
@@ -666,110 +690,119 @@ export default function DiscoverScreen() {
                     <Image
                         key={isDark ? 'dark' : 'light'}
                         source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                        style={{ width: 140, height: 40, alignSelf: 'center' }}
+                        style={{ width: 160, height: 45, alignSelf: 'center' }}
                         resizeMode="contain"
                     />
                 </View>
 
                 {/* Horizontal Context Switcher */}
-                <View className="py-3 border-b border-gray-100 dark:border-zinc-900 bg-white dark:bg-zinc-950 relative">
-                    <ScrollView 
-                        ref={switcherScrollViewRef}
-                        horizontal 
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 12, paddingRight: 40 }}
-                        onScroll={(e) => {
-                            const x = e.nativeEvent.contentOffset.x;
-                            setScrollX(x);
-                            if (x > 10) {
-                                setHasScrolledSwitcher(true);
-                            } else {
-                                setHasScrolledSwitcher(false);
-                            }
-                        }}
-                        onContentSizeChange={(w, h) => setContentWidth(w)}
-                        onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}
-                        scrollEventThrottle={16}
-                    >
-                        {/* 0.5. Active Selected Chowmate Lens (At the LEFT most, before ALL) */}
-                        {switcherLenses.filter(l => l.id.startsWith('buddy_')).map(lens => renderLensButton(lens))}
-
-                        {/* 1. All */}
-                        {renderLensButton(switcherLenses.find(l => l.id === 'all'))}
-                        
-                        {/* 2. Me */}
-                        {renderLensButton(switcherLenses.find(l => l.id === 'me'))}
-
-                        {/* 3. Chowmates (Inline Button) */}
-                        <TouchableOpacity
-                            onPress={openMoreSheet}
-                            className="flex-row items-center px-4 py-2 mr-2.5 rounded-full border bg-gray-50 border-gray-200 dark:bg-zinc-900 dark:border-zinc-800"
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="people-outline" size={13} color={isDark ? '#F4F4F5' : '#4B5563'} style={{ marginRight: 6 }} />
-                            <Text className="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-zinc-300">
-                                Chowmates
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* 4. Saved */}
-                        {renderLensButton(switcherLenses.find(l => l.id === 'saved'))}
-
-                        {/* 4.5. Chowmate Recos */}
-                        {renderLensButton(switcherLenses.find(l => l.id === 'chowmate_recos'))}
-
-                        {/* 5. My Recos (if active/present) */}
-                        {switcherLenses.find(l => l.id === 'recommended') && renderLensButton(switcherLenses.find(l => l.id === 'recommended'))}
-                    </ScrollView>
-                    {scrollX > 10 && (
-                        <TouchableOpacity
-                            onPress={handleScrollLeft}
-                            activeOpacity={0.8}
-                            style={{ 
-                                position: 'absolute',
-                                left: 12,
-                                top: 11,
-                                zIndex: 10,
-                                elevation: 4
+                <Animated.View
+                    style={{
+                        height: switcherHeaderHeight,
+                        opacity: headerCollapseAnim,
+                        transform: [{ translateY: switcherHeaderTranslateY }],
+                        overflow: 'hidden'
+                    }}
+                >
+                    <View className="py-3 border-b border-gray-100 dark:border-zinc-900 bg-white dark:bg-zinc-950 relative" style={{ height: SWITCHER_HEADER_HEIGHT }}>
+                        <ScrollView 
+                            ref={switcherScrollViewRef}
+                            horizontal 
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingHorizontal: 12, paddingRight: 40 }}
+                            onScroll={(e) => {
+                                const x = e.nativeEvent.contentOffset.x;
+                                setScrollX(x);
+                                if (x > 10) {
+                                    setHasScrolledSwitcher(true);
+                                } else {
+                                    setHasScrolledSwitcher(false);
+                                }
                             }}
+                            onContentSizeChange={(w, h) => setContentWidth(w)}
+                            onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}
+                            scrollEventThrottle={16}
                         >
-                            <Animated.View 
-                                className="shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
+                            {/* 0.5. Active Selected Chowmate Lens (At the LEFT most, before ALL) */}
+                            {switcherLenses.filter(l => l.id.startsWith('buddy_')).map(lens => renderLensButton(lens))}
+
+                            {/* 1. All */}
+                            {renderLensButton(switcherLenses.find(l => l.id === 'all'))}
+                            
+                            {/* 2. Me */}
+                            {renderLensButton(switcherLenses.find(l => l.id === 'me'))}
+
+                            {/* 3. Chowmates (Inline Button) */}
+                            <TouchableOpacity
+                                onPress={openMoreSheet}
+                                className="flex-row items-center px-4 py-2 mr-2.5 rounded-full border bg-gray-50 border-gray-200 dark:bg-zinc-900 dark:border-zinc-800"
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="people-outline" size={13} color={isDark ? '#F4F4F5' : '#4B5563'} style={{ marginRight: 6 }} />
+                                <Text className="text-xs font-black uppercase tracking-wider text-gray-600 dark:text-zinc-300">
+                                    Chowmates
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* 4. Saved */}
+                            {renderLensButton(switcherLenses.find(l => l.id === 'saved'))}
+
+                            {/* 4.5. Chowmate Recos */}
+                            {renderLensButton(switcherLenses.find(l => l.id === 'chowmate_recos'))}
+
+                            {/* 5. My Recos (if active/present) */}
+                            {switcherLenses.find(l => l.id === 'recommended') && renderLensButton(switcherLenses.find(l => l.id === 'recommended'))}
+                        </ScrollView>
+                        {scrollX > 10 && (
+                            <TouchableOpacity
+                                onPress={handleScrollLeft}
+                                activeOpacity={0.8}
                                 style={{ 
-                                    opacity: swipeOpacity,
-                                    transform: [{ translateX: swipeTranslateXLeft }],
-                                    backgroundColor: '#40E0D0'
+                                    position: 'absolute',
+                                    left: 12,
+                                    top: 11,
+                                    zIndex: 10,
+                                    elevation: 4
                                 }}
                             >
-                                <Ionicons name="chevron-back" size={18} color="#0F172A" />
-                            </Animated.View>
-                        </TouchableOpacity>
-                    )}
-                    {contentWidth > layoutWidth && scrollX < contentWidth - layoutWidth - 10 && (
-                        <TouchableOpacity
-                            onPress={handleScrollRight}
-                            activeOpacity={0.8}
-                            style={{ 
-                                position: 'absolute',
-                                right: 12,
-                                top: 11,
-                                zIndex: 10,
-                                elevation: 4
-                            }}
-                        >
-                            <Animated.View 
-                                className="shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
+                                <Animated.View 
+                                    className="shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
+                                    style={{ 
+                                        opacity: swipeOpacity,
+                                        transform: [{ translateX: swipeTranslateXLeft }],
+                                        backgroundColor: '#40E0D0'
+                                    }}
+                                >
+                                    <Ionicons name="chevron-back" size={18} color="#0F172A" />
+                                </Animated.View>
+                            </TouchableOpacity>
+                        )}
+                        {contentWidth > layoutWidth && scrollX < contentWidth - layoutWidth - 10 && (
+                            <TouchableOpacity
+                                onPress={handleScrollRight}
+                                activeOpacity={0.8}
                                 style={{ 
-                                    opacity: swipeOpacity,
-                                    transform: [{ translateX: swipeTranslateX }],
-                                    backgroundColor: '#40E0D0'
+                                    position: 'absolute',
+                                    right: 12,
+                                    top: 11,
+                                    zIndex: 10,
+                                    elevation: 4
                                 }}
                             >
-                                <Ionicons name="chevron-forward" size={18} color="#0F172A" />
-                            </Animated.View>
-                        </TouchableOpacity>
-                    )}
-                </View>
+                                <Animated.View 
+                                    className="shadow-lg rounded-full w-9 h-9 items-center justify-center border border-[#20B2AA] dark:border-[#20B2AA]"
+                                    style={{ 
+                                        opacity: swipeOpacity,
+                                        transform: [{ translateX: swipeTranslateX }],
+                                        backgroundColor: '#40E0D0'
+                                    }}
+                                >
+                                    <Ionicons name="chevron-forward" size={18} color="#0F172A" />
+                                </Animated.View>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </Animated.View>
 
                 {/* Collapsible Dynamic Profile Header */}
                 {activeProfile && (activeLens === 'me' || activeLens === 'recommended' || activeLens.startsWith('buddy_')) && (
@@ -851,31 +884,40 @@ export default function DiscoverScreen() {
                 </Animated.View>
 
                 {/* View Mode Toggle Segmented Row */}
-                <View className="flex-row justify-between items-center px-4 py-2 border-b border-gray-100 dark:border-zinc-900 bg-gray-50 dark:bg-zinc-950">
-                    {activeLens !== 'all' ? (
-                        <Text className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest">
-                            {activeLens === 'saved' ? 'Saved Vault' : activeLens === 'me' ? 'My Vault' : activeLens === 'recommended' ? 'My Recos' : activeLens === 'chowmate_recos' ? 'Chowmate Recos' : 'Friend Vault'} ({filteredReviews.length})
-                        </Text>
-                    ) : (
-                        <View />
-                    )}
-                    <View className="flex-row bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl">
-                        <TouchableOpacity 
-                            onPress={() => setViewMode('grid')}
-                            className={`p-2.5 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="grid" size={18} color={viewMode === 'grid' ? (isDark ? 'white' : 'black') : (isDark ? '#A1A1AA' : '#6B7280')} />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            onPress={() => setViewMode('list')}
-                            className={`p-2.5 rounded-lg ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="list" size={18} color={viewMode === 'list' ? (isDark ? 'white' : 'black') : (isDark ? '#A1A1AA' : '#6B7280')} />
-                        </TouchableOpacity>
+                <Animated.View
+                    style={{
+                        height: toggleHeaderHeight,
+                        opacity: headerCollapseAnim,
+                        transform: [{ translateY: toggleHeaderTranslateY }],
+                        overflow: 'hidden'
+                    }}
+                >
+                    <View className="flex-row justify-between items-center px-4 py-2 border-b border-gray-100 dark:border-zinc-900 bg-gray-50 dark:bg-zinc-950" style={{ height: TOGGLE_HEADER_HEIGHT }}>
+                        {activeLens !== 'all' ? (
+                            <Text className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest">
+                                {activeLens === 'saved' ? 'Saved Vault' : activeLens === 'me' ? 'My Vault' : activeLens === 'recommended' ? 'My Recos' : activeLens === 'chowmate_recos' ? 'Chowmate Recos' : 'Friend Vault'} ({filteredReviews.length})
+                            </Text>
+                        ) : (
+                            <View />
+                        )}
+                        <View className="flex-row bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl">
+                            <TouchableOpacity 
+                                onPress={() => setViewMode('grid')}
+                                className={`p-2.5 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="grid" size={18} color={viewMode === 'grid' ? (isDark ? 'white' : 'black') : (isDark ? '#A1A1AA' : '#6B7280')} />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={() => setViewMode('list')}
+                                className={`p-2.5 rounded-lg ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="list" size={18} color={viewMode === 'list' ? (isDark ? 'white' : 'black') : (isDark ? '#A1A1AA' : '#6B7280')} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                </Animated.View>
 
                 {/* Visual Vault Grid / List Feed */}
                 <Animated.View style={{ flex: 1, opacity: contentOpacityAnim }}>

@@ -210,7 +210,7 @@ export default function FeedScreen() {
                 <Image
                     key={isDark ? 'dark' : 'light'}
                     source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                    style={{ width: 140, height: 40, alignSelf: 'center' }}
+                    style={{ width: 160, height: 45, alignSelf: 'center' }}
                     resizeMode="contain"
                 />
                 <TouchableOpacity 

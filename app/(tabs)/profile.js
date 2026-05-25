@@ -277,57 +277,57 @@ export default function ProfileScreen() {
                 onLayout={handleLayout}
                 style={{ flex: 1, width: '100%', maxWidth: maxAppWidth, alignSelf: 'center', position: 'relative' }}
             >
+                {/* Custom Header Container (Static at the top!) */}
+                <View className="bg-gray-100 dark:bg-zinc-950 items-center justify-center border-b border-gray-200 dark:border-zinc-800 relative" style={{ height: 60, width: '100%', zIndex: 10 }}>
+                    {/* Left Side QR Button */}
+                    <View style={{ position: 'absolute', left: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity 
+                            onPress={() => router.push('/qr-code')}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Chowmate QR Code & Scanner"
+                        >
+                            <Ionicons name="qr-code-outline" size={25} color={isDark ? 'white' : 'black'} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Centered Logo */}
+                    <Image
+                        key={isDark ? 'dark' : 'light'}
+                        source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
+                        style={{ width: 160, height: 45, alignSelf: 'center' }}
+                        resizeMode="contain"
+                    />
+
+                    {/* Right Side Buttons (Notifications and Log Out) */}
+                    <View style={{ position: 'absolute', right: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity 
+                            onPress={() => router.push('/notifications')}
+                            style={{ marginRight: 14, position: 'relative' }}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Notifications"
+                        >
+                            <Ionicons name="notifications-outline" size={26} color={isDark ? 'white' : 'black'} />
+                            {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
+                                <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center">
+                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            onPress={signOut}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Log Out"
+                        >
+                            <Ionicons name="log-out-outline" size={26} color={isDark ? 'white' : 'black'} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
                 <FlatList
                 ref={flatListRef}
                 key={viewMode}
                 ListHeaderComponent={() => (
                     <View className="bg-gray-50 dark:bg-zinc-950 pb-4">
-                        {/* Custom Header Container */}
-                        <View className="bg-gray-100 dark:bg-zinc-950 items-center justify-center border-b border-gray-200 dark:border-zinc-800 relative" style={{ height: 60, width: '100%' }}>
-                            {/* Left Side QR Button */}
-                            <View style={{ position: 'absolute', left: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
-                                <TouchableOpacity 
-                                    onPress={() => router.push('/qr-code')}
-                                    activeOpacity={0.7}
-                                    accessibilityLabel="Chowmate QR Code & Scanner"
-                                >
-                                    <Ionicons name="qr-code-outline" size={25} color={isDark ? 'white' : 'black'} />
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Centered Logo */}
-                            <Image
-                                key={isDark ? 'dark' : 'light'}
-                                source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                                style={{ width: 110, height: 32, alignSelf: 'center' }}
-                                resizeMode="contain"
-                            />
-
-                            {/* Right Side Buttons (Notifications and Log Out) */}
-                            <View style={{ position: 'absolute', right: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
-                                <TouchableOpacity 
-                                    onPress={() => router.push('/notifications')}
-                                    style={{ marginRight: 14, position: 'relative' }}
-                                    activeOpacity={0.7}
-                                    accessibilityLabel="Notifications"
-                                >
-                                    <Ionicons name="notifications-outline" size={26} color={isDark ? 'white' : 'black'} />
-                                    {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
-                                        <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center">
-                                            <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                                <TouchableOpacity 
-                                    onPress={signOut}
-                                    activeOpacity={0.7}
-                                    accessibilityLabel="Log Out"
-                                >
-                                    <Ionicons name="log-out-outline" size={26} color={isDark ? 'white' : 'black'} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
                         {/* Top Section: Dashboard Header Details */}
                         <View className="bg-gray-50 dark:bg-zinc-950 pb-4 pt-4 px-5 border-b border-gray-200 dark:border-zinc-800">
                             {/* Centered Identity Row (Avatar + Bio) */}

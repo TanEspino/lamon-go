@@ -241,7 +241,7 @@ export default function SignInScreen() {
             style={{ flex: 1 }}
         >
             <ScrollView 
-                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 40 }}
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: 40, paddingBottom: 90 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
@@ -403,7 +403,31 @@ export default function SignInScreen() {
                         .
                     </Text>
                 </View>
+
             </ScrollView>
+
+            {/* Elegant Company Branding absolutely positioned at the very bottom center */}
+            <View 
+                style={{ 
+                    position: 'absolute', 
+                    bottom: Platform.OS === 'web' ? 24 : 32, 
+                    left: 0, 
+                    right: 0, 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    zIndex: 20
+                }}
+            >
+                <Image 
+                    source={require('../../assets/images/tomokan-logo.png')} 
+                    style={{ width: 24, height: 24, marginRight: 8 }} 
+                    resizeMode="contain" 
+                />
+                <Text className="text-sm font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest" style={{ letterSpacing: 2 }}>
+                    Tomokan Labs
+                </Text>
+            </View>
         </KeyboardAvoidingView>
     );
 }
