@@ -447,7 +447,9 @@ export default function ModalScreen() {
                             </Pressable>
                         ) : step === 2 ? (
                             <Pressable 
+                                disabled={notes.length > 500 || !(restaurantName.trim() && dish.trim() && price.trim() && rating > 0)}
                                 onPress={() => {
+                                    if (notes.length > 500) return;
                                     const canPreview = restaurantName.trim() && dish.trim() && price.trim() && rating > 0;
                                     if (canPreview) {
                                         setStep(3);
@@ -459,7 +461,7 @@ export default function ModalScreen() {
                                     }
                                 }}
                             >
-                                <Text className={`font-bold text-base ${restaurantName.trim() && dish.trim() && price.trim() && rating > 0 ? 'text-blue-500' : 'text-gray-300'}`}>
+                                <Text className={`font-bold text-base ${(restaurantName.trim() && dish.trim() && price.trim() && rating > 0 && notes.length <= 500) ? 'text-blue-500' : 'text-gray-300'}`}>
                                     Preview
                                 </Text>
                             </Pressable>
@@ -865,7 +867,7 @@ export default function ModalScreen() {
                                 </View>
 
                                 {/* Notes / Caption */}
-                                <View className={`py-2 px-3 mt-2 rounded-lg border ${focusedField === 'notes' ? 'border-blue-500 bg-white dark:bg-zinc-900' : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/10'}`}>
+                                <View className={`py-2 px-3 mt-2 rounded-lg border ${focusedField === 'notes' ? 'border-blue-500 bg-white dark:bg-zinc-900' : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/10'}`} style={{ position: 'relative' }}>
                                     <TextInput
                                         value={notes}
                                         onChangeText={setNotes}
@@ -873,12 +875,23 @@ export default function ModalScreen() {
                                         onBlur={() => setFocusedField(null)}
                                         placeholder="Write a caption..."
                                         placeholderTextColor="#71717A"
-                                        multiline
+                                        multiline={true}
+                                        maxLength={500}
                                         className="text-base text-black dark:text-white min-h-[100px]"
-                                        style={{ paddingTop: 8, paddingBottom: 16, outlineStyle: 'none' }}
+                                        style={{ paddingTop: 8, paddingBottom: 24, outlineStyle: 'none' }}
                                         includeFontPadding={false}
                                         textAlignVertical="top"
                                     />
+                                    <Text style={{ 
+                                        position: 'absolute',
+                                        bottom: 8,
+                                        right: 12,
+                                        fontSize: 10,
+                                        fontWeight: '700',
+                                        color: notes.length >= 450 ? '#ef4444' : '#71717A' 
+                                    }}>
+                                        {notes.length} / 500
+                                    </Text>
                                 </View>
                             </View>
                         </View>

@@ -71,9 +71,10 @@ export default function FeedScreen() {
     // Automatically scroll to top when the active tab icon is tapped
     useScrollToTop(flatListRef);
 
-    const formatReviews = (data) => {
+    const formatReviews = (data, ratingsMap = {}) => {
         return (data || []).map(r => {
             const parsedPhotos = r.image_url ? r.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+            const userRating = ratingsMap[r.id];
             return {
                 id: r.id,
                 user_id: r.user_id,
@@ -88,7 +89,11 @@ export default function FeedScreen() {
                 photo_url: parsedPhotos[0] || '',
                 photos: parsedPhotos,
                 created_at: r.created_at,
-                visibility: r.visibility || 'shared'
+                visibility: r.visibility || 'shared',
+                consensus_average: r.consensus_average !== undefined && r.consensus_average !== null ? parseFloat(r.consensus_average) : 0.0,
+                consensus_count: r.consensus_count !== undefined && r.consensus_count !== null ? parseInt(r.consensus_count) : 0,
+                user_consensus_rating: userRating ? userRating.rating : null,
+                user_consensus_comment: userRating ? userRating.comment : '',
             };
         });
     };
@@ -121,18 +126,31 @@ export default function FeedScreen() {
         if (!silent) setRefreshing(true);
         try {
             const buddyIds = await fetchBuddyIds();
-            const { data, error } = await supabase
-                .from('reviews')
-                .select('*, profiles:user_id(username, avatar_url, full_name)')
-                .in('user_id', buddyIds)
-                .order('created_at', { ascending: false })
-                .limit(21);
+            const [postsResult, ratingsResult] = await Promise.all([
+                supabase
+                    .from('reviews')
+                    .select('*, profiles:user_id(username, avatar_url, full_name)')
+                    .in('user_id', buddyIds)
+                    .order('created_at', { ascending: false })
+                    .limit(21),
+                supabase
+                    .from('consensus_ratings')
+                    .select('post_id, rating, comment')
+                    .eq('user_id', user.id)
+            ]);
 
-            if (error) throw error;
+            if (postsResult.error) throw postsResult.error;
 
-            const formatted = formatReviews(data);
+            const ratingsMap = {};
+            if (!ratingsResult.error && ratingsResult.data) {
+                ratingsResult.data.forEach(r => {
+                    ratingsMap[r.post_id] = { rating: r.rating, comment: r.comment || '' };
+                });
+            }
+
+            const formatted = formatReviews(postsResult.data, ratingsMap);
             setPosts(formatted);
-            setHasMore(data.length === 21);
+            setHasMore(postsResult.data.length === 21);
         } catch (err) {
             console.error("Failed to load feed:", err);
         } finally {
@@ -147,19 +165,32 @@ export default function FeedScreen() {
             const lastPost = posts[posts.length - 1];
             const buddyIds = await fetchBuddyIds();
             
-            const { data, error } = await supabase
-                .from('reviews')
-                .select('*, profiles:user_id(username, avatar_url, full_name)')
-                .in('user_id', buddyIds)
-                .lt('created_at', lastPost.created_at)
-                .order('created_at', { ascending: false })
-                .limit(21);
+            const [postsResult, ratingsResult] = await Promise.all([
+                supabase
+                    .from('reviews')
+                    .select('*, profiles:user_id(username, avatar_url, full_name)')
+                    .in('user_id', buddyIds)
+                    .lt('created_at', lastPost.created_at)
+                    .order('created_at', { ascending: false })
+                    .limit(21),
+                supabase
+                    .from('consensus_ratings')
+                    .select('post_id, rating, comment')
+                    .eq('user_id', user.id)
+            ]);
 
-            if (error) throw error;
+            if (postsResult.error) throw postsResult.error;
 
-            const formatted = formatReviews(data);
+            const ratingsMap = {};
+            if (!ratingsResult.error && ratingsResult.data) {
+                ratingsResult.data.forEach(r => {
+                    ratingsMap[r.post_id] = { rating: r.rating, comment: r.comment || '' };
+                });
+            }
+
+            const formatted = formatReviews(postsResult.data, ratingsMap);
             setPosts(prev => [...prev, ...formatted]);
-            setHasMore(data.length === 21);
+            setHasMore(postsResult.data.length === 21);
         } catch (err) {
             console.error("Failed to load more posts:", err);
         } finally {
@@ -232,6 +263,7 @@ export default function FeedScreen() {
                 renderItem={({ item }) => (
                     <ReviewCard
                         review={item}
+                        feedType="home"
                         onRestaurantPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant_id || 'mock', name: item.restaurant_name } })}
                         onProfilePress={() => handleProfilePress(item.user_id)}
                         isSaved={savedReviewIds.includes(item.id)}

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, Text, TouchableOpacity, View, Animated, FlatList, Image, Alert, Platform, AppState } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useReviews } from '../context/ReviewsContext'; // To trigger feed refresh if needed
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
 export default function NotificationsScreen({ isTab = false }) {
     const router = useRouter();
+    const navigation = useNavigation();
     const { user, fetchBuddyStats, clearUnseenAcceptance, unseenRecommendationsCount, clearUnseenRecommendations, showToast, setActiveDiscoverUser } = useAuth();
     const { fetchReviews } = useReviews(); // Used to refetch reviews after accepting a buddy
     const { colorScheme } = useColorScheme();
@@ -20,33 +20,45 @@ export default function NotificationsScreen({ isTab = false }) {
     const [recentConnections, setRecentConnections] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [clickedNotificationIds, setClickedNotificationIds] = useState([]);
 
-    // Load clicked notification IDs from AsyncStorage on mount
-    useEffect(() => {
-        const loadClickedIds = async () => {
-            try {
-                const stored = await AsyncStorage.getItem('clicked_notification_ids');
-                if (stored) {
-                    setClickedNotificationIds(JSON.parse(stored));
-                }
-            } catch (e) {
-                console.error("Error loading clicked notifications:", e);
-            }
-        };
-        loadClickedIds();
-    }, []);
+    // Local tracking Set for batched "Mark as Read" updates
+    const pendingReadNotificationIds = useRef(new Set());
 
-    const markAsClicked = async (id) => {
+    const markLocalAsRead = (id) => {
+        setRecommendations(prev => prev.map(item => item.id === id ? { ...item, is_read: true } : item));
+        setRecentConnections(prev => prev.map(item => item.id === id ? { ...item, is_read: true } : item));
+    };
+
+    const triggerBatchUpdate = async () => {
+        if (pendingReadNotificationIds.current.size === 0) return;
+
+        const idsToUpdate = Array.from(pendingReadNotificationIds.current);
+        // Clear Set immediately to prevent duplicate runs
+        pendingReadNotificationIds.current.clear();
+
+        console.log("📤 Batch marking notifications as read in Supabase:", idsToUpdate);
         try {
-            if (clickedNotificationIds.includes(id)) return;
-            const updated = [...clickedNotificationIds, id];
-            setClickedNotificationIds(updated);
-            await AsyncStorage.setItem('clicked_notification_ids', JSON.stringify(updated));
+            const { error } = await supabase
+                .from('notifications')
+                .update({ is_read: true })
+                .in('id', idsToUpdate);
+            if (error) throw error;
         } catch (e) {
-            console.error("Error saving clicked notification:", e);
+            console.error("Error bulk marking notifications as read:", e);
         }
     };
+
+    // Execute batched mark-as-read when screen loses focus (blur) or unmounts
+    useEffect(() => {
+        if (!navigation) return;
+        const unsubscribe = navigation.addListener('blur', () => {
+            triggerBatchUpdate();
+        });
+        return () => {
+            unsubscribe();
+            triggerBatchUpdate();
+        };
+    }, [navigation]);
 
     const handleProfilePress = (buddyId) => {
         if (!buddyId) return;
@@ -118,12 +130,12 @@ export default function NotificationsScreen({ isTab = false }) {
 
         if (!user?.id) return;
 
-        // Register Realtime listener for buddies updates to dynamically refresh the screen
-        const buddiesSubscription = supabase
+        // Register Realtime listener for public.notifications updates to dynamically refresh the screen
+        const notificationsSubscription = supabase
             .channel('notifications-screen-realtime')
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'buddies' },
+                { event: '*', schema: 'public', table: 'notifications' },
                 async (payload) => {
                     console.log("🔔 Notifications screen real-time update:", payload);
                     // Pass true to execute background sync silently, and force = true to bypass visibility guards
@@ -157,6 +169,9 @@ export default function NotificationsScreen({ isTab = false }) {
             console.log(`📱 Notifications app state changed: ${nextAppState} (Active: ${isActive})`);
             if (isActive) {
                 fetchNotifications(true);
+            } else {
+                // Transitioning to background -> Dispatch batched read notifications write instantly
+                triggerBatchUpdate();
             }
         };
 
@@ -166,7 +181,7 @@ export default function NotificationsScreen({ isTab = false }) {
         const appStateSub = AppState.addEventListener('change', handleAppStateChange);
 
         return () => {
-            supabase.removeChannel(buddiesSubscription);
+            supabase.removeChannel(notificationsSubscription);
             if (pollInterval) clearInterval(pollInterval);
             if (Platform.OS === 'web' && typeof document !== 'undefined') {
                 document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -187,98 +202,72 @@ export default function NotificationsScreen({ isTab = false }) {
         if (!isBackground) setLoading(true);
 
         try {
-            // 1. Fetch pending incoming requests
-            const { data: pendingData, error: pendingErr } = await supabase
-                .from('buddies')
-                .select('id, created_at, requester:profiles!requester_id(id, username, full_name, avatar_url)')
-                .eq('receiver_id', user.id)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false });
+            // Fetch pending requests, recommendations (limit 50), and accepted activity (limit 50) in parallel
+            const [pendingRes, recRes, acceptedRes] = await Promise.all([
+                supabase.from('notifications')
+                    .select('id, type, created_at, is_read, reference_id, notifier:profiles!notifier_id(id, username, full_name, avatar_url)')
+                    .eq('user_id', user.id)
+                    .eq('type', 'pending')
+                    .order('created_at', { ascending: false }),
+                supabase.from('notifications')
+                    .select('id, type, created_at, is_read, reference_id, dish_name, notifier:profiles!notifier_id(id, username, full_name, avatar_url)')
+                    .eq('user_id', user.id)
+                    .eq('type', 'recommended')
+                    .order('created_at', { ascending: false })
+                    .limit(50),
+                supabase.from('notifications')
+                    .select('id, type, created_at, is_read, reference_id, notifier:profiles!notifier_id(id, username, full_name, avatar_url)')
+                    .eq('user_id', user.id)
+                    .eq('type', 'accepted')
+                    .order('created_at', { ascending: false })
+                    .limit(50)
+            ]);
 
-            if (pendingErr) throw pendingErr;
+            if (pendingRes.error) throw pendingRes.error;
+            if (recRes.error) throw recRes.error;
+            if (acceptedRes.error) throw acceptedRes.error;
 
-            // 2. Fetch recently accepted connections (active buddies)
-            const { data: acceptedData, error: acceptedErr } = await supabase
-                .from('buddies')
-                .select(`
-                    id, 
-                    created_at, 
-                    status,
-                    requester_id,
-                    receiver_id,
-                    requester:profiles!requester_id(id, username, full_name, avatar_url),
-                    receiver:profiles!receiver_id(id, username, full_name, avatar_url)
-                `)
-                .eq('status', 'accepted')
-                .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`)
-                .order('created_at', { ascending: false })
-                .limit(10);
+            // Map and format results safely to match the exact JSX shapes needed
+            const processedRequests = (pendingRes.data || []).map(item => ({
+                id: item.id,
+                reference_id: item.reference_id, // the buddy record ID
+                created_at: item.created_at,
+                type: 'pending',
+                is_read: item.is_read,
+                requester: item.notifier
+            }));
 
-            if (acceptedErr) throw acceptedErr;
+            const processedRecommendations = (recRes.data || []).map(item => ({
+                id: item.id,
+                postId: item.reference_id, // review post ID
+                created_at: item.created_at,
+                status: 'recommended',
+                type: 'recommended',
+                is_read: item.is_read || pendingReadNotificationIds.current.has(item.id),
+                profile: item.notifier,
+                dish_name: item.dish_name
+            }));
 
-            // Transform accepted connections and extract buddyIds for recommendations
-            const buddyIds = [];
-            const processedAccepted = (acceptedData || []).map(item => {
-                const isRequester = item.requester_id === user.id;
-                const buddyProfile = isRequester ? item.receiver : item.requester;
-                if (buddyProfile) {
-                    buddyIds.push(buddyProfile.id);
-                }
-                return {
-                    id: item.id,
-                    created_at: item.created_at,
-                    status: 'accepted',
-                    profile: buddyProfile,
-                    isOutgoingAcceptance: isRequester
-                };
-            }).filter(item => item.profile !== null);
+            const processedAccepted = (acceptedRes.data || []).map(item => ({
+                id: item.id,
+                reference_id: item.reference_id,
+                created_at: item.created_at,
+                status: 'accepted',
+                type: 'accepted',
+                is_read: item.is_read || pendingReadNotificationIds.current.has(item.id),
+                profile: item.notifier,
+                isOutgoingAcceptance: true // always show outgoing notification accept format for requester
+            }));
 
-            // 3. Fetch recent recommended posts from ALL accepted buddies
-            let processedRecommendations = [];
-            const { data: allBuddies, error: allBuddiesErr } = await supabase
-                .from('buddies')
-                .select('requester_id, receiver_id')
-                .eq('status', 'accepted')
-                .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
-
-            if (!allBuddiesErr && allBuddies) {
-                const allBuddyIds = [];
-                allBuddies.forEach(b => {
-                    if (b.requester_id !== user.id) allBuddyIds.push(b.requester_id);
-                    if (b.receiver_id !== user.id) allBuddyIds.push(b.receiver_id);
-                });
-
-                if (allBuddyIds.length > 0) {
-                    const { data: recData, error: recErr } = await supabase
-                        .from('reviews')
-                        .select('id, created_at, dish_name, user_id, profiles:user_id(id, username, full_name, avatar_url)')
-                        .eq('visibility', 'recommended')
-                        .in('user_id', allBuddyIds)
-                        .order('created_at', { ascending: false })
-                        .limit(15);
-
-                    if (!recErr && recData) {
-                        processedRecommendations = recData.map(item => ({
-                            id: `rec_${item.id}`,
-                            postId: item.id,
-                            created_at: item.created_at,
-                            status: 'recommended',
-                            profile: item.profiles,
-                            dish_name: item.dish_name
-                        }));
-                    }
-                }
-            }
-
-            // Blink-Free Guard: Compare array contents strictly by row IDs and statuses
+            // Blink-Free Guard: Compare array contents strictly by row IDs and read statuses
             const arraysAreEqual = (arr1, arr2) => {
                 if (arr1.length !== arr2.length) return false;
-                return arr1.every((val, index) => val.id === arr2[index].id && val.status === arr2[index].status);
+                return arr1.every((val, index) => val.id === arr2[index].id && val.is_read === arr2[index].is_read);
             };
 
             // Only update states if lists are actually modified, preserving avatar image caches
-            if (!arraysAreEqual(pendingData || [], requestsRef.current)) {
-                setRequests(pendingData || []);
+            if (!arraysAreEqual(processedRequests, requestsRef.current)) {
+                setRequests(processedRequests);
             }
             if (!arraysAreEqual(processedAccepted, recentConnectionsRef.current)) {
                 setRecentConnections(processedAccepted);
@@ -307,7 +296,7 @@ export default function NotificationsScreen({ isTab = false }) {
 
     const handleAccept = async (requestId) => {
         try {
-            const requestItem = requests.find(r => r.id === requestId);
+            const requestItem = requests.find(r => r.reference_id === requestId);
             const buddyUsername = requestItem?.requester?.username || "Guest";
 
             const { error } = await supabase
@@ -318,7 +307,7 @@ export default function NotificationsScreen({ isTab = false }) {
             if (error) throw error;
             
             // Remove from list
-            setRequests(prev => prev.filter(r => r.id !== requestId));
+            setRequests(prev => prev.filter(r => r.reference_id !== requestId));
             
             // Refresh reviews feed to include new buddy's posts
             fetchReviews();
@@ -341,7 +330,7 @@ export default function NotificationsScreen({ isTab = false }) {
 
     const handleReject = async (requestId) => {
         try {
-            const requestItem = requests.find(r => r.id === requestId);
+            const requestItem = requests.find(r => r.reference_id === requestId);
             const buddyUsername = requestItem?.requester?.username || "Guest";
 
             const { error } = await supabase
@@ -352,7 +341,7 @@ export default function NotificationsScreen({ isTab = false }) {
             if (error) throw error;
             
             // Remove from list
-            setRequests(prev => prev.filter(r => r.id !== requestId));
+            setRequests(prev => prev.filter(r => r.reference_id !== requestId));
             
             // Refresh stats badge count immediately
             fetchBuddyStats();
@@ -421,13 +410,13 @@ export default function NotificationsScreen({ isTab = false }) {
 
                     <View className="flex-row space-x-2">
                         <TouchableOpacity 
-                            onPress={() => handleReject(item.id)}
+                            onPress={() => handleReject(item.reference_id)}
                             className="bg-gray-100 dark:bg-zinc-800 p-1.5 rounded-full mr-1.5"
                         >
                             <Ionicons name="close" size={18} color={isDark ? '#D4D4D8' : '#52525B'} />
                         </TouchableOpacity>
                         <TouchableOpacity 
-                            onPress={() => handleAccept(item.id)}
+                            onPress={() => handleAccept(item.reference_id)}
                             className="bg-primary p-1.5 rounded-full"
                         >
                             <Ionicons name="checkmark" size={18} color="white" />
@@ -440,13 +429,16 @@ export default function NotificationsScreen({ isTab = false }) {
         if (item.type === 'recommended') {
             const profile = item.profile;
             if (!profile) return null;
-            const isClicked = clickedNotificationIds.includes(item.id);
+            const isClicked = item.is_read;
 
             return (
                 <TouchableOpacity 
                     onPress={async () => {
-                        // 1. Mark as clicked locally & persist in AsyncStorage
-                        await markAsClicked(item.id);
+                        // 1. Mark as read optimistically in local state & add to batched updates ref Set
+                        if (!item.is_read) {
+                            pendingReadNotificationIds.current.add(item.id);
+                            markLocalAsRead(item.id);
+                        }
                         
                         // 2. Clear app-level unseen recommendations count
                         if (clearUnseenRecommendations) {
@@ -503,13 +495,16 @@ export default function NotificationsScreen({ isTab = false }) {
         if (item.type === 'accepted') {
             const profile = item.profile;
             if (!profile) return null;
-            const isClicked = clickedNotificationIds.includes(item.id);
+            const isClicked = item.is_read;
 
             return (
                 <TouchableOpacity 
                     onPress={() => {
-                        // Mark as clicked
-                        markAsClicked(item.id);
+                        // Mark as read optimistically in local state & add to batched updates ref Set
+                        if (!item.is_read) {
+                            pendingReadNotificationIds.current.add(item.id);
+                            markLocalAsRead(item.id);
+                        }
                     }}
                     className={`flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50 px-3.5 -mx-3.5 ${!isClicked ? 'bg-teal-500/[0.04] dark:bg-teal-500/[0.06] border-l-[4px] border-l-teal-500' : 'bg-transparent border-l-[4px] border-l-transparent'}`}
                     activeOpacity={0.75}

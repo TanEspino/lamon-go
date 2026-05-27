@@ -210,6 +210,7 @@ export default function ProfileScreen() {
     const renderListItem = ({ item }) => (
         <ReviewCard 
             review={item}
+            feedType="profile"
             onRestaurantPress={() => router.push({ pathname: '/restaurant/[id]', params: { id: item.restaurant_id || 'mock', name: item.restaurant_name } })}
             onDelete={() => handleDelete(item.id)}
             onEdit={() => router.push({ pathname: '/modal', params: item })}

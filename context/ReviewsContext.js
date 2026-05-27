@@ -82,10 +82,30 @@ export function ReviewsProvider({ children }) {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
+
+            // Fetch consensus ratings by the current user to resolve persistence on mount
+            let userRatingsMap = {};
+            try {
+                const { data: ratingData, error: ratingError } = await supabase
+                    .from('consensus_ratings')
+                    .select('post_id, rating, comment')
+                    .eq('user_id', user.id);
+                if (!ratingError && ratingData) {
+                    ratingData.forEach(r => {
+                        userRatingsMap[r.post_id] = {
+                            rating: r.rating,
+                            comment: r.comment || ''
+                        };
+                    });
+                }
+            } catch (err) {
+                console.log("⚠️ Could not fetch user consensus ratings:", err);
+            }
             
             // Format data to match app expectations exactly as they were with mock data
             const formattedReviews = data.map(r => {
                 const parsedPhotos = r.image_url ? r.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+                const userRating = userRatingsMap[r.id];
                 return {
                     id: r.id,
                     user_id: r.user_id,
@@ -101,6 +121,10 @@ export function ReviewsProvider({ children }) {
                     photos: parsedPhotos,
                     created_at: r.created_at,
                     visibility: r.visibility || 'shared',
+                    consensus_average: r.consensus_average !== undefined && r.consensus_average !== null ? parseFloat(r.consensus_average) : 0.0,
+                    consensus_count: r.consensus_count !== undefined && r.consensus_count !== null ? parseInt(r.consensus_count) : 0,
+                    user_consensus_rating: userRating ? userRating.rating : null,
+                    user_consensus_comment: userRating ? userRating.comment : '',
                 };
             });
             
@@ -126,6 +150,31 @@ export function ReviewsProvider({ children }) {
             setLoading(false);
         }
     }, [user?.id, fetchReviews, fetchSavedReviews]);
+
+    // Supabase Real-time WebSocket subscription for post consensus updates
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const channel = supabase
+            .channel(`public:reviews_consensus:${user.id}`)
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'reviews' 
+            }, (payload) => {
+                const updated = payload.new;
+                setReviews(prev => prev.map(r => r.id === updated.id ? {
+                    ...r,
+                    consensus_average: updated.consensus_average !== undefined && updated.consensus_average !== null ? parseFloat(updated.consensus_average) : r.consensus_average,
+                    consensus_count: updated.consensus_count !== undefined && updated.consensus_count !== null ? parseInt(updated.consensus_count) : r.consensus_count,
+                } : r));
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id]);
 
     const addReview = async (newReview) => {
         if (!user) throw new Error("Must be logged in to post.");
@@ -168,6 +217,8 @@ export function ReviewsProvider({ children }) {
                 photos: parsedPhotos,
                 created_at: data.created_at,
                 visibility: data.visibility || 'shared',
+                consensus_average: data.consensus_average !== undefined && data.consensus_average !== null ? parseFloat(data.consensus_average) : 0.0,
+                consensus_count: data.consensus_count !== undefined && data.consensus_count !== null ? parseInt(data.consensus_count) : 0,
             };
             
             setReviews(prev => [formatted, ...prev]);
@@ -216,6 +267,8 @@ export function ReviewsProvider({ children }) {
                 photos: parsedPhotos,
                 created_at: data.created_at,
                 visibility: data.visibility || 'shared',
+                consensus_average: data.consensus_average !== undefined && data.consensus_average !== null ? parseFloat(data.consensus_average) : 0.0,
+                consensus_count: data.consensus_count !== undefined && data.consensus_count !== null ? parseInt(data.consensus_count) : 0,
             };
 
             setReviews(prev => prev.map(r => r.id === data.id ? formatted : r));

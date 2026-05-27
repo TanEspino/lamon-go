@@ -43,11 +43,6 @@ export const AuthProvider = ({ children }) => {
 
     const clearUnseenRecommendations = async () => {
         setUnseenRecommendationsCount(0);
-        try {
-            await AsyncStorage.setItem('last_notifications_viewed_at', new Date().toISOString());
-        } catch (e) {
-            console.log("Error writing last viewed notification timestamp:", e);
-        }
     };
 
     useEffect(() => {
@@ -396,45 +391,17 @@ export const AuthProvider = ({ children }) => {
                 buddyIdsRef.current = newIds;
             }
 
-            // 3. Fetch recommended posts count from ALL buddies after lastNotificationsViewedAt
-            let unseenRecsCount = 0;
-            const buddyIds = bData ? bData.map(item => {
-                const isRequester = item.requester_id === activeId;
-                return isRequester ? item.receiver_id : item.requester_id;
-            }) : [];
+            // 3. Fetch recommended posts count from notifications table
+            const { count: recCount, error: recErr } = await supabase
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', activeId)
+                .eq('type', 'recommended')
+                .eq('is_read', false);
 
-            if (buddyIds.length > 0) {
-                // Get last viewed timestamp from AsyncStorage
-                let lastViewed = null;
-                try {
-                    const stored = await AsyncStorage.getItem('last_notifications_viewed_at');
-                    if (stored) {
-                        lastViewed = new Date(stored).toISOString();
-                    } else {
-                        // Default to last 7 days if no view timestamp exists
-                        lastViewed = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-                    }
-                } catch (e) {
-                    console.log("Error reading last viewed notification timestamp:", e);
-                    lastViewed = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-                }
-
-                let query = supabase
-                    .from('reviews')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('visibility', 'recommended')
-                    .in('user_id', buddyIds);
-
-                if (lastViewed) {
-                    query = query.gt('created_at', lastViewed);
-                }
-
-                const { count: recCount, error: recErr } = await query;
-                if (!recErr && recCount !== null) {
-                    unseenRecsCount = recCount;
-                }
+            if (!recErr && recCount !== null) {
+                setUnseenRecommendationsCount(recCount);
             }
-            setUnseenRecommendationsCount(unseenRecsCount);
             
             // Once a successful stats load is complete, toggle first load flag to false
             isFirstLoadRef.current = false;

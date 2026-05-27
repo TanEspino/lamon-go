@@ -297,9 +297,10 @@ export default function DiscoverScreen() {
         }
     };
 
-    const formatReviews = (data) => {
+    const formatReviews = (data, ratingsMap = {}) => {
         return (data || []).map(r => {
             const parsedPhotos = r.image_url ? r.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
+            const userRating = ratingsMap[r.id];
             return {
                 id: r.id,
                 user_id: r.user_id,
@@ -314,7 +315,11 @@ export default function DiscoverScreen() {
                 photo_url: parsedPhotos[0] || '',
                 photos: parsedPhotos,
                 created_at: r.created_at,
-                visibility: r.visibility || 'shared'
+                visibility: r.visibility || 'shared',
+                consensus_average: r.consensus_average !== undefined && r.consensus_average !== null ? parseFloat(r.consensus_average) : 0.0,
+                consensus_count: r.consensus_count !== undefined && r.consensus_count !== null ? parseInt(r.consensus_count) : 0,
+                user_consensus_rating: userRating ? userRating.rating : null,
+                user_consensus_comment: userRating ? userRating.comment : '',
             };
         });
     };
@@ -369,13 +374,28 @@ export default function DiscoverScreen() {
                 }
             }
 
-            const { data, error } = await query;
-            if (activeLensRef.current !== currentLens) return;
-            if (error) throw error;
+            // Execute parallel fetch to completely resolve N+1 queries
+            const [postsResult, ratingsResult] = await Promise.all([
+                query,
+                supabase
+                    .from('consensus_ratings')
+                    .select('post_id, rating, comment')
+                    .eq('user_id', user.id)
+            ]);
 
-            const formatted = formatReviews(data);
+            if (activeLensRef.current !== currentLens) return;
+            if (postsResult.error) throw postsResult.error;
+
+            const ratingsMap = {};
+            if (!ratingsResult.error && ratingsResult.data) {
+                ratingsResult.data.forEach(r => {
+                    ratingsMap[r.post_id] = { rating: r.rating, comment: r.comment || '' };
+                });
+            }
+
+            const formatted = formatReviews(postsResult.data, ratingsMap);
             setVaultPosts(formatted);
-            setHasMore(data.length === 21);
+            setHasMore(postsResult.data.length === 21);
         } catch (err) {
             console.error("Failed to load vault:", err);
         } finally {
@@ -428,13 +448,28 @@ export default function DiscoverScreen() {
                 }
             }
 
-            const { data, error } = await query;
-            if (activeLensRef.current !== currentLens) return;
-            if (error) throw error;
+            // Execute parallel fetch to completely resolve N+1 queries
+            const [postsResult, ratingsResult] = await Promise.all([
+                query,
+                supabase
+                    .from('consensus_ratings')
+                    .select('post_id, rating, comment')
+                    .eq('user_id', user.id)
+            ]);
 
-            const formatted = formatReviews(data);
+            if (activeLensRef.current !== currentLens) return;
+            if (postsResult.error) throw postsResult.error;
+
+            const ratingsMap = {};
+            if (!ratingsResult.error && ratingsResult.data) {
+                ratingsResult.data.forEach(r => {
+                    ratingsMap[r.post_id] = { rating: r.rating, comment: r.comment || '' };
+                });
+            }
+
+            const formatted = formatReviews(postsResult.data, ratingsMap);
             setVaultPosts(prev => [...prev, ...formatted]);
-            setHasMore(data.length === 21);
+            setHasMore(postsResult.data.length === 21);
         } catch (err) {
             console.error("Failed to load more vault:", err);
         } finally {
@@ -446,9 +481,12 @@ export default function DiscoverScreen() {
 
     // Keep dynamic buddies profile details sync'd for headers
     const loadHeaderProfileDetails = async () => {
+        if (!user) return;
         if (activeLens === 'me' || activeLens === 'recommended') {
             setActiveProfile(myProfile);
-            loadProfileStats(user.id);
+            if (user?.id) {
+                loadProfileStats(user.id);
+            }
         } else if (activeLens.startsWith('buddy_')) {
             const buddyId = activeLens.split('_')[1];
             const profile = buddiesList.find(b => b.id === buddyId) || bumpedChowmates.find(b => b.id === buddyId);
@@ -1232,6 +1270,7 @@ export default function DiscoverScreen() {
                             return (
                                 <ReviewCard
                                     review={item}
+                                    feedType="discover"
                                     onRestaurantPress={() => handleRestaurantPress(item.restaurant_id, item.restaurant_name)}
                                     onProfilePress={() => handleProfilePress(item.user_id)}
                                     isSaved={savedReviewIds.includes(item.id)}

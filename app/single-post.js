@@ -18,6 +18,7 @@ export default function SinglePostScreen() {
     const [loading, setLoading] = useState(true);
     const [post, setPost] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Slide-up and fade-in animations
     const slideAnim = useRef(new Animated.Value(600)).current;
@@ -263,7 +264,7 @@ export default function SinglePostScreen() {
 
                                 {/* Photo box */}
                                 <View className="px-5">
-                                    <View className={`rounded-3xl overflow-hidden shadow-md bg-gray-100 dark:bg-zinc-800 relative w-full aspect-[4/5] ${post.visibility === 'recommended' ? 'border-2 border-amber-400 dark:border-amber-500' : ''}`}>
+                                    <View className={`rounded-3xl overflow-hidden shadow-md bg-gray-100 dark:bg-zinc-800 relative w-full aspect-square ${post.visibility === 'recommended' ? 'border-2 border-amber-400 dark:border-amber-500' : ''}`}>
                                         <Image
                                             source={{ uri: photoUrl }}
                                             className="w-full h-full"
@@ -285,9 +286,24 @@ export default function SinglePostScreen() {
                                             Chowmate review notes
                                         </Text>
                                         <View className="border-l-4 border-cyan-400 dark:border-cyan-600 pl-3.5 py-1 bg-cyan-50/20 dark:bg-zinc-900 rounded-r-lg">
-                                            <Text className="text-gray-800 dark:text-zinc-200 text-base leading-relaxed italic" style={{ fontFamily: 'serif' }}>
-                                                "{post.notes}"
-                                            </Text>
+                                            <View style={{ marginTop: 4 }}>
+                                                <Text 
+                                                    ellipsizeMode="tail" 
+                                                    numberOfLines={isExpanded ? undefined : 2} 
+                                                    className="text-gray-800 dark:text-zinc-200 text-base leading-relaxed italic" 
+                                                    style={{ fontFamily: 'serif' }}
+                                                >
+                                                    "{post.notes}"
+                                                </Text>
+                                                
+                                                {post.notes && post.notes.length > 100 && (
+                                                    <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={{ marginTop: 4 }}>
+                                                        <Text style={{ color: '#888', fontWeight: 'bold', fontSize: 13 }}>
+                                                            {isExpanded ? 'Show less' : 'Read more'}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
                                         </View>
                                     </View>
                                 )}

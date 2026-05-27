@@ -28,6 +28,7 @@ export default function TabLayout() {
     const isActive = (route) => {
         if (route === 'index') return pathname === '/' || pathname === '/index';
         if (route === 'discover') return pathname.startsWith('/discover');
+        if (route === 'notifications') return pathname.startsWith('/notifications');
         if (route === 'profile') return pathname.startsWith('/profile');
         return false;
     };
@@ -79,6 +80,21 @@ export default function TabLayout() {
                             <Ionicons size={24} name="add" color="black" />
                         </TouchableOpacity>
 
+                        {/* Notifications Tab */}
+                        <TouchableOpacity 
+                            onPress={() => router.push('/notifications')}
+                            className="p-2.5 rounded-2xl items-center justify-center relative"
+                            style={{ backgroundColor: isActive('notifications') ? (isDark ? 'rgba(225, 29, 72, 0.15)' : '#FFF1F2') : 'transparent' }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons size={24} name={isActive('notifications') ? "notifications" : "notifications-outline"} color={isActive('notifications') ? "#E11D48" : inactiveColor} />
+                            {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
+                                <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
+                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
                         {/* Profile Tab */}
                         <TouchableOpacity 
                             onPress={() => router.push('/profile')}
@@ -99,11 +115,6 @@ export default function TabLayout() {
                                 />
                             ) : (
                                   <Ionicons size={24} name={isActive('profile') ? "person" : "person-outline"} color={isActive('profile') ? "#E11D48" : inactiveColor} />
-                            )}
-                            {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
-                                <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
-                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
-                                </View>
                             )}
                         </TouchableOpacity>
                     </View>
