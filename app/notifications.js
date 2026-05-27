@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, View, Animated, FlatList, Image, Alert, Platform, AppState } from 'react-native';
+import { SafeAreaView, Text, TouchableOpacity, View, Animated, FlatList, Image, Platform, AppState } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useNavigation } from 'expo-router';
 import { useColorScheme } from 'nativewind';
@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useReviews } from '../context/ReviewsContext'; // To trigger feed refresh if needed
 import * as Notifications from 'expo-notifications';
+import { useAlert, CustomAlert } from '../context/AlertContext';
 
 export default function NotificationsScreen({ isTab = false }) {
     const router = useRouter();
@@ -15,6 +16,7 @@ export default function NotificationsScreen({ isTab = false }) {
     const { fetchReviews } = useReviews(); // Used to refetch reviews after accepting a buddy
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const { showAlert } = useAlert();
 
     const [requests, setRequests] = useState([]);
     const [recentConnections, setRecentConnections] = useState([]);
@@ -70,7 +72,7 @@ export default function NotificationsScreen({ isTab = false }) {
                     Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
                     Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
                 ]).start(() => {
-                    if (router.canGoBack()) router.back();
+                    router.dismiss();
                     router.push('/(tabs)/profile');
                 });
             }
@@ -85,7 +87,7 @@ export default function NotificationsScreen({ isTab = false }) {
                     Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
                     Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
                 ]).start(() => {
-                    if (router.canGoBack()) router.back();
+                    router.dismiss();
                     router.push('/(tabs)/discover');
                 });
             }
@@ -289,8 +291,7 @@ export default function NotificationsScreen({ isTab = false }) {
             Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
             Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
         ]).start(() => {
-            if (router.canGoBack()) router.back();
-            else router.replace('/');
+            router.dismiss();
         });
     };
 
@@ -323,7 +324,7 @@ export default function NotificationsScreen({ isTab = false }) {
             if (showToast) {
                 showToast("Error", "Could not accept request.", "error");
             } else {
-                Alert.alert("Error", "Could not accept request.");
+                showAlert("Error", "Could not accept request.");
             }
         }
     };
@@ -354,7 +355,7 @@ export default function NotificationsScreen({ isTab = false }) {
             if (showToast) {
                 showToast("Error", "Could not reject request.", "error");
             } else {
-                Alert.alert("Error", "Could not reject request.");
+                showAlert("Error", "Could not reject request.");
             }
         }
     };
@@ -580,6 +581,7 @@ export default function NotificationsScreen({ isTab = false }) {
                     )}
                 />
             </Animated.View>
+            <CustomAlert />
         </SafeAreaView>
     );
 }

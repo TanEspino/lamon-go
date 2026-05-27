@@ -1,17 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Alert, Dimensions, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, Platform, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
+import { Dimensions, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, Platform, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useReviews } from '../../context/ReviewsContext';
 import ReviewCard from '../../components/ReviewCard';
 import { useColorScheme } from 'nativewind';
 import { supabase } from '../../lib/supabase';
+import { useAlert } from '../../context/AlertContext';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { reviews, deleteReview } = useReviews();
     const { profile, user, signOut, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, unseenRecommendationsCount, setActiveDiscoverUser } = useAuth();
+    const { showAlert } = useAlert();
 
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -86,7 +88,7 @@ export default function ProfileScreen() {
             fetchBuddies();
         } catch (e) {
             console.error("Error deleting buddy:", e);
-            Alert.alert("Error", "Could not remove Chowmate.");
+            showAlert("Error", "Could not remove Chowmate.");
         }
     };
 
@@ -106,7 +108,7 @@ export default function ProfileScreen() {
             fetchBuddyStats();
         } catch (e) {
             console.error("Error accepting buddy request:", e);
-            Alert.alert("Error", "Could not accept Chowmate request.");
+            showAlert("Error", "Could not accept Chowmate request.");
         }
     };
 
@@ -190,21 +192,14 @@ export default function ProfileScreen() {
     };
 
     const handleDelete = (id) => {
-        if (Platform.OS === 'web') {
-            const confirmed = window.confirm("Are you sure you want to delete this post?");
-            if (confirmed) {
-                deleteReview(id);
-            }
-        } else {
-            Alert.alert(
-                "Delete Post",
-                "Are you sure you want to delete this post?",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Delete", style: "destructive", onPress: () => deleteReview(id) }
-                ]
-            );
-        }
+        showAlert(
+            "Delete Post",
+            "Are you sure you want to delete this post?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => deleteReview(id) }
+            ]
+        );
     };
 
     const renderListItem = ({ item }) => (

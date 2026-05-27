@@ -31,6 +31,7 @@ if (Platform.OS !== 'web') {
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ReviewsProvider } from '../context/ReviewsContext';
+import { AlertProvider, CustomAlert } from '../context/AlertContext';
 
 export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -75,7 +76,9 @@ export default function RootLayout() {
         <View className="flex-1 w-full max-w-[600px] self-center bg-white dark:bg-zinc-900 border-l border-r border-gray-200 dark:border-zinc-800">
           <AuthProvider>
             <ReviewsProvider>
-              <RootLayoutContent />
+              <AlertProvider>
+                <RootLayoutContent />
+              </AlertProvider>
             </ReviewsProvider>
           </AuthProvider>
         </View>
@@ -102,6 +105,7 @@ function RootLayoutContent() {
         <Stack.Screen name="notifications" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
       <GlobalToast />
+      <CustomAlert />
     </View>
   );
 }

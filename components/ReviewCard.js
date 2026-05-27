@@ -1,9 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image, Text, TouchableOpacity, View, ScrollView, Pressable, useWindowDimensions, StyleSheet, Modal, FlatList, Alert, Platform, TextInput, KeyboardAvoidingView, Animated } from 'react-native';
+import { Image, Text, TouchableOpacity, View, ScrollView, Pressable, useWindowDimensions, StyleSheet, Modal, FlatList, Platform, TextInput, KeyboardAvoidingView, Animated } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAlert, CustomAlert } from '../context/AlertContext';
 
 // Module-level global flags to avoid spamming table existence checks across multiple card mounts
 let globalDbChecked = false;
@@ -14,6 +15,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { user, profile } = useAuth();
+    const { showAlert } = useAlert();
 
     // Responsive card width computation for immediate correct sizing
     const fallbackWidth = Math.min(windowWidth, 600) - 32;
@@ -301,11 +303,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
 
     const openRateDishSheet = () => {
         if (review.user_id === user?.id) {
-            if (Platform.OS === 'web') {
-                window.alert("You cannot contribute a consensus rating to your own post!");
-            } else {
-                Alert.alert("Action Blocked 🚫", "You cannot contribute a consensus rating to your own post!");
-            }
+            showAlert("Action Blocked 🚫", "You cannot contribute a consensus rating to your own post!");
             return;
         }
         setShowRateDishSheet(true);
@@ -730,6 +728,7 @@ const toastTextThemeStyle = (isDark) => ({
 
 // Premium Rate Dish Slide-Up Bottom Sheet Component
 function RateDishBottomSheet({ visible, onClose, isDark, onSubmit, currentRating = 0, currentComment = '' }) {
+    const { showAlert } = useAlert();
     const [rating, setRating] = useState(currentRating);
     const [comment, setComment] = useState(currentComment);
 
@@ -743,11 +742,7 @@ function RateDishBottomSheet({ visible, onClose, isDark, onSubmit, currentRating
 
     const handleSubmit = () => {
         if (rating === 0) {
-            if (Platform.OS === 'web') {
-                window.alert("Please select a star rating between 1 and 5 to rate this dish!");
-            } else {
-                Alert.alert("Star Rating Required ⭐️", "Please select a star rating between 1 and 5 to rate this dish!");
-            }
+            showAlert("Star Rating Required ⭐️", "Please select a star rating between 1 and 5 to rate this dish!");
             return;
         }
         onSubmit(rating, comment.trim());
@@ -844,6 +839,7 @@ function RateDishBottomSheet({ visible, onClose, isDark, onSubmit, currentRating
                     </View>
                 </KeyboardAvoidingView>
             </View>
+            <CustomAlert />
         </Modal>
     );
 }
@@ -862,28 +858,23 @@ function ConsensusBottomSheet({
     onRemoveRating 
 }) {
 
+    const { showAlert } = useAlert();
+
     const handleRemovePress = () => {
-        // Web-safe absolute overlay confirmation instead of Mobile-only Alert blocks
-        if (Platform.OS === 'web') {
-            if (window.confirm("Are you sure you want to delete your rating from the verdict?")) {
-                onRemoveRating();
-            }
-        } else {
-            Alert.alert(
-                "Remove Rating",
-                "Are you sure you want to delete your rating from the verdict?",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { 
-                        text: "Remove", 
-                        style: "destructive", 
-                        onPress: () => {
-                            onRemoveRating();
-                        } 
-                    }
-                ]
-            );
-        }
+        showAlert(
+            "Remove Rating",
+            "Are you sure you want to delete your rating from the verdict?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "Remove", 
+                    style: "destructive", 
+                    onPress: () => {
+                        onRemoveRating();
+                    } 
+                }
+            ]
+        );
     };
 
     return (
@@ -1058,6 +1049,7 @@ function ConsensusBottomSheet({
                     </View>
                 </View>
             </View>
+            <CustomAlert />
         </Modal>
     );
 }

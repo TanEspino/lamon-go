@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Image, KeyboardAvoidingView, Platform, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import * as Linking from 'expo-linking';
 import { useColorScheme } from 'nativewind';
 import { useRouter, Link } from 'expo-router';
 import Constants from 'expo-constants';
+import { useAlert } from '../../context/AlertContext';
 
 WebBrowser.maybeCompleteAuthSession(); // Handle redirect on web
 
@@ -32,6 +33,7 @@ export default function SignInScreen() {
     const [loading, setLoading] = useState(false);
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const { showAlert } = useAlert();
 
     // Custom Email Auth Form States
     const [email, setEmail] = useState('');
@@ -53,7 +55,7 @@ export default function SignInScreen() {
                 
                 if (sessionError) {
                     console.error("❌ Session Error:", sessionError);
-                    Alert.alert('Session Error', sessionError.message);
+                    showAlert('Session Error', sessionError.message);
                 } else {
                     console.log("🎉 Session successfully established!");
                 }
@@ -117,7 +119,7 @@ export default function SignInScreen() {
 
         } catch (error) {
             console.error("OAuth Exception:", error);
-            Alert.alert('OAuth Error', error.message || "An unknown error occurred");
+            showAlert('OAuth Error', error.message || "An unknown error occurred");
         } finally {
             setLoading(false);
         }
@@ -167,7 +169,7 @@ export default function SignInScreen() {
                                          error.message?.toLowerCase().includes('confirm') ||
                                          error.message?.toLowerCase().includes('verified');
 
-            Alert.alert(
+            showAlert(
                 "Demo Sign-In Failed",
                 `${error.message || "Failed to establish a developer session."}${isRateOrConfirmError ? '\n\n💡 Supabase Developer Workarounds:\n\n1. ENABLE ANONYMOUS AUTH (Recommended):\nIn your Supabase Dashboard, go to Auth -> Providers -> Anonymous and turn it ON. This enables zero-configuration instant sign-in.\n\n2. DISABLE EMAIL CONFIRMATION:\nIn your Supabase Dashboard, go to Auth -> Providers -> Email and turn "Confirm email" OFF to instantly register and sign in test accounts.' : ''}`,
                 [{ text: "OK" }]
@@ -179,7 +181,7 @@ export default function SignInScreen() {
 
     const handleEmailAuth = async () => {
         if (!email.trim() || !password.trim()) {
-            Alert.alert("Required Fields", "Please enter both email and password.");
+            showAlert("Required Fields", "Please enter both email and password.");
             return;
         }
 
@@ -202,13 +204,13 @@ export default function SignInScreen() {
                 
                 // If email confirmation is enabled, session might be null
                 if (data && !data.session) {
-                    Alert.alert(
+                    showAlert(
                         "Account Created",
                         "Your account has been created!\n\n📧 A confirmation link has been sent to your email. Please verify it to log in, OR you can disable \"Confirm email\" in your Supabase Auth -> Providers -> Email settings to bypass email verification during development.",
                         [{ text: "OK" }]
                     );
                 } else {
-                    Alert.alert("Success", "Account created and logged in!");
+                    showAlert("Success", "Account created and logged in!");
                 }
             } else {
                 console.log("Attempting Custom Email Sign-In...");
@@ -224,7 +226,7 @@ export default function SignInScreen() {
             console.error("Email Auth Error:", error);
             const isRateLimit = error.message?.toLowerCase().includes('rate') || error.message?.toLowerCase().includes('exceeded');
             
-            Alert.alert(
+            showAlert(
                 isSignUp ? "Sign-Up Failed" : "Sign-In Failed",
                 `${error.message || "An authentication error occurred."}${isRateLimit ? '\n\n💡 Tip: To bypass email rate limits, go to your Supabase Dashboard -> Auth -> Providers -> Email, and toggle "Confirm email" to OFF.' : ''}`,
                 [{ text: "OK" }]

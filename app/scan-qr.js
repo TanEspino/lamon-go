@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, View, StyleSheet, Animated, Alert, Image, Platform, ActivityIndicator } from 'react-native';
+import { SafeAreaView, Text, TouchableOpacity, View, StyleSheet, Animated, Image, Platform, ActivityIndicator } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,16 +7,18 @@ import { useColorScheme } from 'nativewind';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useAlert, CustomAlert } from '../context/AlertContext';
 
 export default function ScanQRScreen() {
     const router = useRouter();
     const { user, fetchBuddyStats, showToast } = useAuth();
+    const { showAlert } = useAlert();
 
     const triggerAlert = (title, message, type = 'error') => {
         if (showToast) {
             showToast(title, message, type);
         } else {
-            Alert.alert(title, message);
+            showAlert(title, message);
         }
     };
 
@@ -94,8 +96,7 @@ export default function ScanQRScreen() {
             Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
             Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
         ]).start(() => {
-            if (router.canGoBack()) router.back();
-            else router.replace('/');
+            router.dismiss();
         });
     };
 
@@ -251,7 +252,7 @@ export default function ScanQRScreen() {
 
             // 2. Open library picker
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 quality: 1,
             });
@@ -586,6 +587,7 @@ export default function ScanQRScreen() {
                     )}
                 </View>
             </Animated.View>
+            <CustomAlert />
         </SafeAreaView>
     );
 }

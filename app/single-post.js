@@ -6,6 +6,7 @@ import { useColorScheme } from 'nativewind';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useReviews } from '../context/ReviewsContext';
+import { CustomAlert } from '../context/AlertContext';
 
 export default function SinglePostScreen() {
     const router = useRouter();
@@ -95,11 +96,7 @@ export default function SinglePostScreen() {
                 useNativeDriver: true
             })
         ]).start(() => {
-            if (router.canGoBack()) {
-                router.back();
-            } else {
-                router.replace('/(tabs)');
-            }
+            router.dismiss();
         });
     };
 
@@ -358,6 +355,7 @@ export default function SinglePostScreen() {
                     )}
                 </SafeAreaView>
             </Animated.View>
+            <CustomAlert />
         </View>
     );
 }

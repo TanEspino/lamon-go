@@ -43,11 +43,7 @@ export default function TermsOfServiceScreen() {
                 useNativeDriver: true,
             })
         ]).start(() => {
-            if (router.canGoBack()) {
-                router.back();
-            } else {
-                router.replace('/');
-            }
+            router.dismiss();
         });
     };
 

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View, Switch } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View, Switch } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -10,10 +10,12 @@ import { useColorScheme } from 'nativewind';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import { prepareUploadPayload } from '../utils/uploadHelper';
+import { useAlert } from '../context/AlertContext';
 
 export default function OnboardingScreen() {
     const { updateProfileLocal, profile, user, fetchProfile } = useAuth();
     const router = useRouter();
+    const { showAlert } = useAlert();
     const [username, setUsername] = useState(profile?.username || '');
     const [bio, setBio] = useState(profile?.bio || '');
     const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
@@ -41,7 +43,7 @@ export default function OnboardingScreen() {
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.5,
@@ -54,18 +56,18 @@ export default function OnboardingScreen() {
 
     const handleSave = async () => {
         if (!username.trim()) {
-            Alert.alert("Required", "Please provide a username.");
+            showAlert("Required", "Please provide a username.");
             return;
         }
 
         const usernameRegex = /^[a-zA-Z0-9._]+$/;
         if (!usernameRegex.test(username)) {
-            Alert.alert("Invalid Username", "Username can only contain letters, numbers, periods, and underscores. No spaces allowed.");
+            showAlert("Invalid Username", "Username can only contain letters, numbers, periods, and underscores. No spaces allowed.");
             return;
         }
 
         if (!user) {
-            Alert.alert("Error", "You must be logged in to save a profile.");
+            showAlert("Error", "You must be logged in to save a profile.");
             return;
         }
 
@@ -144,7 +146,7 @@ export default function OnboardingScreen() {
             }
         } catch (error) {
             console.error("Onboarding Error:", error);
-            Alert.alert('Error', error.message || "Failed to save profile.");
+            showAlert('Error', error.message || "Failed to save profile.");
         } finally {
             setIsSaving(false);
         }

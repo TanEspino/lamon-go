@@ -5,13 +5,14 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useEffect, useState, useRef } from 'react';
-import { Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import CurrencyPicker from '../components/CurrencyPicker';
 import { useReviews } from '../context/ReviewsContext';
 import { useAuth } from '../context/AuthContext';
 import ReviewCard from '../components/ReviewCard';
 import { prepareUploadPayload } from '../utils/uploadHelper';
 import { useColorScheme } from 'nativewind';
+import { useAlert, CustomAlert } from '../context/AlertContext';
 
 export default function ModalScreen() {
     const router = useRouter();
@@ -23,6 +24,7 @@ export default function ModalScreen() {
     const { addReview, updateReview, reviews } = useReviews();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const { showAlert } = useAlert();
 
     const [step, setStep] = useState(1); // 1 = Upload Pic, 2 = Details, 3 = Preview
 
@@ -167,7 +169,7 @@ export default function ModalScreen() {
     const takePhoto = async (index = null) => {
         try {
             if (index === null && photos.length >= 5) {
-                Alert.alert(
+                showAlert(
                     "Maximum Limit Reached 📸",
                     "You can upload a maximum of 5 photos per post to keep your feed clean and snappy!"
                 );
@@ -176,7 +178,7 @@ export default function ModalScreen() {
 
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert(
+                showAlert(
                     "Permission Denied 🚫",
                     "Sorry, we need camera permissions to make this work! Please enable them in your settings."
                 );
@@ -184,7 +186,7 @@ export default function ModalScreen() {
             }
 
             let result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 quality: 0.5,
             });
@@ -201,14 +203,14 @@ export default function ModalScreen() {
             }
         } catch (error) {
             console.error("Error taking photo:", error);
-            Alert.alert("Error", "Failed to launch camera: " + error.message);
+            showAlert("Error", "Failed to launch camera: " + error.message);
         }
     };
 
     const pickImageFromLibrary = async (index = null) => {
         try {
             if (index === null && photos.length >= 5) {
-                Alert.alert(
+                showAlert(
                     "Maximum Limit Reached 📸",
                     "You can upload a maximum of 5 photos per post to keep your feed clean and snappy!"
                 );
@@ -218,7 +220,7 @@ export default function ModalScreen() {
             if (Platform.OS !== 'web') {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (status !== 'granted') {
-                    Alert.alert(
+                    showAlert(
                         "Permission Denied 🚫",
                         "Sorry, we need gallery permissions to browse photos! Please enable them in your settings."
                     );
@@ -227,7 +229,7 @@ export default function ModalScreen() {
             }
 
             let result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 allowsMultipleSelection: index === null, // only allow multiple if adding new photos
                 quality: 0.5,
@@ -244,7 +246,7 @@ export default function ModalScreen() {
                     const urisToAdd = selectedUris.slice(0, remainingSlots);
                     
                     if (selectedUris.length > remainingSlots) {
-                        Alert.alert(
+                        showAlert(
                             "Photos Limited 📸",
                             `Only ${remainingSlots} photos were added to respect the 5-photo limit.`
                         );
@@ -254,7 +256,7 @@ export default function ModalScreen() {
             }
         } catch (error) {
             console.error("Error picking image:", error);
-            Alert.alert("Error", "Failed to select photo: " + error.message);
+            showAlert("Error", "Failed to select photo: " + error.message);
         }
     };
 
@@ -262,7 +264,7 @@ export default function ModalScreen() {
         if (Platform.OS === 'web') {
             await pickImageFromLibrary(index);
         } else {
-            Alert.alert(
+            showAlert(
                 "Select Photo Source 📸",
                 "Choose how you want to add your photo:",
                 [
@@ -278,8 +280,7 @@ export default function ModalScreen() {
                         text: "Cancel",
                         style: "cancel",
                     },
-                ],
-                { cancelable: true }
+                ]
             );
         }
     };
@@ -984,6 +985,7 @@ export default function ModalScreen() {
             />
                 </SafeAreaView>
             </Animated.View>
+            <CustomAlert />
         </View>
     );
 }

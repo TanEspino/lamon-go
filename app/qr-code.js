@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, View, StyleSheet, Animated, Alert, Image, Platform, ActivityIndicator } from 'react-native';
+import { SafeAreaView, Text, TouchableOpacity, View, StyleSheet, Animated, Image, Platform, ActivityIndicator } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import * as Sharing from 'expo-sharing';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { savePass } from '../utils/savePassHelper';
+import { useAlert, CustomAlert } from '../context/AlertContext';
 
 
 
@@ -20,6 +21,7 @@ export default function UnifiedQRCodeScreen() {
     const { profile, user, fetchBuddyStats, showToast } = useAuth();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const { showAlert } = useAlert();
 
     // Screen Modes: 'scan' (Camera Scanner) or 'generate' (Show QR Code)
     const [mode, setMode] = useState('scan'); 
@@ -47,25 +49,6 @@ export default function UnifiedQRCodeScreen() {
         } catch (e) {
             console.error("dataURLtoBlob conversion error:", e);
             return null;
-        }
-    };
-
-    // Cross-platform Alert Helper that handles browser window.alert and native Alert.alert transparently
-    const showAlert = (title, message, onPressOk) => {
-        if (showToast) {
-            const lowerTitle = (title || "").toLowerCase();
-            const isError = lowerTitle.includes('fail') || lowerTitle.includes('error') || lowerTitle.includes('denied') || lowerTitle.includes('invalid');
-            showToast(title, message, isError ? 'error' : 'success');
-            if (onPressOk) onPressOk();
-        } else if (Platform.OS === 'web') {
-            window.alert(`${title ? title + ': ' : ''}${message}`);
-            if (onPressOk) onPressOk();
-        } else {
-            if (onPressOk) {
-                Alert.alert(title, message, [{ text: "OK", onPress: onPressOk }]);
-            } else {
-                Alert.alert(title, message);
-            }
         }
     };
 
@@ -118,8 +101,7 @@ export default function UnifiedQRCodeScreen() {
             Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
             Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
         ]).start(() => {
-            if (router.canGoBack()) router.back();
-            else router.replace('/profile');
+            router.dismiss();
         });
     };
 
@@ -142,7 +124,7 @@ export default function UnifiedQRCodeScreen() {
 
             // 2. Open library picker
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 quality: 1,
             });
@@ -1035,6 +1017,7 @@ export default function UnifiedQRCodeScreen() {
                     </View>
                 )}
             </Animated.View>
+            <CustomAlert />
         </SafeAreaView>
     );
 }
