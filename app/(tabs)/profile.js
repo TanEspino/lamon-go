@@ -298,21 +298,8 @@ export default function ProfileScreen() {
                         resizeMode="contain"
                     />
 
-                    {/* Right Side Buttons (Notifications and Log Out) */}
+                    {/* Right Side Buttons (Log Out) */}
                     <View style={{ position: 'absolute', right: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity 
-                            onPress={() => router.push('/notifications')}
-                            style={{ marginRight: 14, position: 'relative' }}
-                            activeOpacity={0.7}
-                            accessibilityLabel="Notifications"
-                        >
-                            <Ionicons name="notifications-outline" size={26} color={isDark ? 'white' : 'black'} />
-                            {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
-                                <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center">
-                                    <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
                         <TouchableOpacity 
                             onPress={signOut}
                             activeOpacity={0.7}

@@ -306,40 +306,26 @@ export default function FeedScreen() {
             />
 
             {/* Scroll to Top Button */}
-            {showScrollTop && isLargeScreen && (
+            {showScrollTop && (
                 <TouchableOpacity
                     onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
-                    className="absolute bottom-6 right-6 bg-turquoise w-12 h-12 rounded-full items-center justify-center shadow-lg"
-                    style={{ elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 }}
+                    className="bg-turquoise rounded-full items-center justify-center shadow-lg"
+                    style={{ 
+                        position: 'absolute',
+                        bottom: isLargeScreen ? 24 : 80, // Float beautifully above the 65px tall bottom tab bar on mobile
+                        right: 24,
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        elevation: 5, 
+                        shadowColor: '#000', 
+                        shadowOffset: { width: 0, height: 2 }, 
+                        shadowOpacity: 0.3, 
+                        shadowRadius: 3 
+                    }}
                     activeOpacity={0.8}
                 >
                     <Ionicons name="arrow-up" size={24} color="black" />
-                </TouchableOpacity>
-            )}
-            {/* Mobile Floating Action Button (FAB) - Visible only on mobile screens */}
-            {!isLargeScreen && (
-                <TouchableOpacity 
-                    onPress={() => router.push('/modal')}
-                    className="bg-[#E11D48]"
-                    style={{ 
-                        position: 'absolute',
-                        bottom: 24,
-                        right: 24,
-                        width: 56,
-                        height: 56,
-                        borderRadius: 28,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        elevation: 6,
-                        shadowColor: '#E11D48',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 6,
-                        zIndex: 999
-                    }}
-                    activeOpacity={0.85}
-                >
-                    <Ionicons name="add" size={28} color="white" />
                 </TouchableOpacity>
             )}
         </SafeAreaView>

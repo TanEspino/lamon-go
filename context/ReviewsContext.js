@@ -23,7 +23,7 @@ export function ReviewsProvider({ children }) {
             if (error) throw error;
             setSavedReviewIds(data.map(d => d.post_id));
         } catch (error) {
-            console.error('Error fetching saved reviews:', error);
+            console.log('⚠️ Network/Fetch error in fetchSavedReviews:', error.message || error);
         }
     }, [user?.id]);
 
@@ -109,7 +109,7 @@ export function ReviewsProvider({ children }) {
                 fetchBuddyStats(user.id, true);
             }
         } catch (error) {
-            console.error('Error fetching reviews:', error);
+            console.log('⚠️ Network/Fetch error in fetchReviews:', error.message || error);
         } finally {
             setLoading(false);
         }

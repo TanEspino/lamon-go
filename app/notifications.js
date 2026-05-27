@@ -9,7 +9,7 @@ import { useReviews } from '../context/ReviewsContext'; // To trigger feed refre
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ isTab = false }) {
     const router = useRouter();
     const { user, fetchBuddyStats, clearUnseenAcceptance, unseenRecommendationsCount, clearUnseenRecommendations, showToast, setActiveDiscoverUser } = useAuth();
     const { fetchReviews } = useReviews(); // Used to refetch reviews after accepting a buddy
@@ -51,24 +51,32 @@ export default function NotificationsScreen() {
     const handleProfilePress = (buddyId) => {
         if (!buddyId) return;
         if (buddyId === user?.id) {
-            Animated.parallel([
-                Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
-                Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
-            ]).start(() => {
-                if (router.canGoBack()) router.back();
+            if (isTab) {
                 router.push('/(tabs)/profile');
-            });
+            } else {
+                Animated.parallel([
+                    Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
+                    Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+                ]).start(() => {
+                    if (router.canGoBack()) router.back();
+                    router.push('/(tabs)/profile');
+                });
+            }
         } else {
             if (setActiveDiscoverUser) {
                 setActiveDiscoverUser(buddyId);
             }
-            Animated.parallel([
-                Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
-                Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
-            ]).start(() => {
-                if (router.canGoBack()) router.back();
+            if (isTab) {
                 router.push('/(tabs)/discover');
-            });
+            } else {
+                Animated.parallel([
+                    Animated.timing(slideAnim, { toValue: 150, duration: 250, useNativeDriver: true }),
+                    Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true })
+                ]).start(() => {
+                    if (router.canGoBack()) router.back();
+                    router.push('/(tabs)/discover');
+                });
+            }
         }
     };
 
@@ -89,14 +97,16 @@ export default function NotificationsScreen() {
     }, [recommendations]);
 
     // Animation values
-    const slideAnim = useRef(new Animated.Value(150)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(isTab ? 0 : 150)).current;
+    const fadeAnim = useRef(new Animated.Value(isTab ? 1 : 0)).current;
 
     useEffect(() => {
-        Animated.parallel([
-            Animated.timing(slideAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
-            Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true })
-        ]).start();
+        if (!isTab) {
+            Animated.parallel([
+                Animated.timing(slideAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
+                Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true })
+            ]).start();
+        }
 
         fetchNotifications();
         if (clearUnseenAcceptance) {
@@ -277,7 +287,9 @@ export default function NotificationsScreen() {
                 setRecommendations(processedRecommendations);
             }
         } catch (error) {
-            console.error("Error fetching notifications:", error);
+            // Standard network failures are expected on mobile when coming back from sleep/idle.
+            // Log as warning to prevent triggering annoying Red Screen developer LogBox notifications.
+            console.log("⚠️ Standby/Network offline during notifications fetch:", error.message || error);
         } finally {
             if (!isBackground) setLoading(false);
         }
@@ -539,10 +551,18 @@ export default function NotificationsScreen() {
         <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
             <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                 {/* Header */}
-                <View className="flex-row items-center px-4 bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60 }}>
-                    <TouchableOpacity onPress={handleClose} className="p-2 -ml-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-800">
-                        <Ionicons name="close" size={26} color={isDark ? '#F4F4F5' : '#18181B'} />
-                    </TouchableOpacity>
+                <View 
+                    className="flex-row items-center px-4 border-b border-gray-200 dark:border-zinc-800" 
+                    style={{ 
+                        height: 60,
+                        backgroundColor: isDark ? '#09090b' : '#f3f4f6'
+                    }}
+                >
+                    {!isTab && (
+                        <TouchableOpacity onPress={handleClose} className="p-2 -ml-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-800">
+                            <Ionicons name="close" size={26} color={isDark ? '#F4F4F5' : '#18181B'} />
+                        </TouchableOpacity>
+                    )}
                     <Text className="text-lg font-bold text-gray-900 dark:text-zinc-50 ml-3">Notifications</Text>
                 </View>
 

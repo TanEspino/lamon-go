@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter, usePathname } from 'expo-router';
-import { Image, View, TouchableOpacity, useWindowDimensions, Text } from 'react-native';
+import { Image, View, TouchableOpacity, useWindowDimensions, Text, Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useColorScheme } from 'nativewind';
 
@@ -65,10 +65,18 @@ export default function TabLayout() {
                         {/* Add Post Button */}
                         <TouchableOpacity 
                             onPress={() => router.push('/modal')}
-                            className="p-2.5 rounded-2xl items-center justify-center"
+                            className="w-10 h-10 rounded-full items-center justify-center shadow-md"
+                            style={{ 
+                                backgroundColor: '#00D2C4',
+                                shadowColor: '#00D2C4',
+                                shadowOffset: { width: 0, height: 3 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 4,
+                                elevation: 3
+                            }}
                             activeOpacity={0.7}
                         >
-                            <Ionicons size={24} name="add-circle-outline" color={inactiveColor} />
+                            <Ionicons size={24} name="add" color="black" />
                         </TouchableOpacity>
 
                         {/* Profile Tab */}
@@ -119,16 +127,17 @@ export default function TabLayout() {
                             backgroundColor: isDark ? '#09090B' : '#F9FAFB', 
                             borderTopWidth: 1,
                             borderTopColor: isDark ? '#27272A' : '#E5E7EB',
-                            height: 60,
+                            height: 65,
                             paddingBottom: 0,
                             paddingTop: 0,
+                            elevation: 0,
+                            shadowOpacity: 0,
                         },
                         tabBarItemStyle: {
                             justifyContent: 'center',
                             alignItems: 'center',
-                            height: 60,
-                            paddingTop: 0,
-                            paddingBottom: 0,
+                            padding: 0,
+                            margin: 0,
                         },
                         tabBarIconStyle: {
                             justifyContent: 'center',
@@ -140,33 +149,43 @@ export default function TabLayout() {
                         },
                         tabBarIcon: ({ focused, color, size }) => {
                             if (route.name === 'index') {
-                                return <Ionicons size={26} name={focused ? "home" : "home-outline"} color={color} />;
+                                return <Ionicons size={24} name={focused ? "home" : "home-outline"} color={color} />;
                             }
                             if (route.name === 'discover') {
-                                return <Ionicons size={26} name={focused ? "compass" : "compass-outline"} color={color} />;
+                                return <Ionicons size={24} name={focused ? "compass" : "compass-outline"} color={color} />;
                             }
-                            if (route.name === 'profile') {
+                            if (route.name === 'create') {
+                                return <View style={{ width: 48, height: 48 }} />;
+                            }
+                            if (route.name === 'notifications') {
                                 return (
                                     <View className="relative justify-center items-center" style={{ width: 28, height: 28 }}>
-                                        {profile && profile.avatar_url && !profile.avatar_url.includes('placehold.co') ? (
-                                            <Image
-                                                source={{ uri: profile.avatar_url }}
-                                                style={{
-                                                    width: 28,
-                                                    height: 28,
-                                                    borderRadius: 14,
-                                                    borderWidth: focused ? 2 : 1,
-                                                    borderColor: focused ? '#E11D48' : (isDark ? '#27272A' : '#E5E7EB')
-                                                }}
-                                                resizeMode="cover"
-                                            />
-                                        ) : (
-                                            <Ionicons size={26} name={focused ? "person" : "person-outline"} color={color} />
-                                        )}
+                                        <Ionicons size={24} name={focused ? "notifications" : "notifications-outline"} color={color} />
                                         {(pendingCount + unseenAcceptanceCount + unseenRecommendationsCount) > 0 && (
                                             <View className="absolute -top-1 -right-1 bg-rose-500 rounded-full w-4 h-4 items-center justify-center border border-white dark:border-zinc-950" style={{ elevation: 2 }}>
                                                 <Text className="text-white text-[8px] font-black text-center" style={{ lineHeight: 11 }}>{pendingCount + unseenAcceptanceCount + unseenRecommendationsCount}</Text>
                                             </View>
+                                        )}
+                                    </View>
+                                );
+                            }
+                            if (route.name === 'profile') {
+                                return (
+                                    <View className="relative justify-center items-center" style={{ width: 30, height: 30 }}>
+                                        {profile && profile.avatar_url && !profile.avatar_url.includes('placehold.co') ? (
+                                            <Image
+                                                source={{ uri: profile.avatar_url }}
+                                                style={{
+                                                    width: 30,
+                                                    height: 30,
+                                                    borderRadius: 15,
+                                                    borderWidth: focused ? 2 : 1,
+                                                    borderColor: focused ? '#00D2C4' : (isDark ? '#27272A' : '#E5E5E5'),
+                                                }}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <Ionicons size={24} name={focused ? "person" : "person-outline"} color={focused ? '#00D2C4' : color} />
                                         )}
                                     </View>
                                 );
@@ -182,10 +201,47 @@ export default function TabLayout() {
                 >
                     <Tabs.Screen name="index" options={{ title: 'Feed', tabBarLabel: 'Feed' }} />
                     <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarLabel: 'Discover' }} />
-                    <Tabs.Screen name="create" options={{ href: null }} />
+                    <Tabs.Screen 
+                        name="create" 
+                        options={{ title: 'Add Dish', tabBarLabel: 'Add Dish' }} 
+                        listeners={({ navigation }) => ({
+                            tabPress: (e) => {
+                                e.preventDefault();
+                                router.push('/modal');
+                            },
+                        })}
+                    />
+                    <Tabs.Screen name="notifications" options={{ title: 'Notifications', tabBarLabel: 'Notifications' }} />
                     <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarLabel: 'Profile' }} />
                 </Tabs>
 
+                {/* Visual prominent floating center [ + ] button on mobile */}
+                {!isLargeScreen && (
+                    <TouchableOpacity
+                        onPress={() => router.push('/modal')}
+                        style={{
+                            position: 'absolute',
+                            bottom: 8.5, // Centers perfectly vertically inside the 65px tall tab bar
+                            left: '50%',
+                            transform: [{ translateX: -24 }], // Centers horizontally (exactly half of width)
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            backgroundColor: '#00D2C4',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            shadowColor: '#00D2C4',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.35,
+                            shadowRadius: 5,
+                            elevation: 5,
+                            zIndex: 9999, // Render on top of everything!
+                        }}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="add" size={28} color="black" style={{ fontWeight: '900' }} />
+                    </TouchableOpacity>
+                )}
 
             </View>
         </View>

@@ -232,12 +232,17 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
             } catch (err) {
-                console.error("Session fetch crash, clearing auth storage:", err);
-                try {
-                    await supabase.auth.signOut();
-                } catch (_) {}
-                setSession(null);
-                setUser(null);
+                const isNetworkError = err?.message?.includes('Network request failed') || err?.toString()?.includes('Network request failed');
+                if (isNetworkError) {
+                    console.log("⚠️ Network request failed during session fetch, maintaining active session state.");
+                } else {
+                    console.log("⚠️ Session fetch crash, clearing auth storage:", err.message || err);
+                    try {
+                        await supabase.auth.signOut();
+                    } catch (_) {}
+                    setSession(null);
+                    setUser(null);
+                }
             } finally {
                 setLoading(false);
             }
@@ -268,7 +273,7 @@ export const AuthProvider = ({ children }) => {
             .single();
 
         if (error) {
-            console.error('Error fetching profile:', error);
+            console.log('⚠️ Network/Fetch error fetching profile:', error.message || error);
         } else {
             setProfile(data);
         }
@@ -434,7 +439,8 @@ export const AuthProvider = ({ children }) => {
             // Once a successful stats load is complete, toggle first load flag to false
             isFirstLoadRef.current = false;
         } catch (e) {
-            console.error("Error fetching buddy stats in context:", e);
+            // Log standby/offline network drops cleanly without developer Red Box interrupts
+            console.log("⚠️ Offline/Standby in fetchBuddyStats:", e.message || e);
         }
     };
 
