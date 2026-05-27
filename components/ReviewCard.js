@@ -859,6 +859,8 @@ function ConsensusBottomSheet({
 }) {
 
     const { showAlert } = useAlert();
+    const { height: windowHeight } = useWindowDimensions();
+    const sheetMaxHeight = windowHeight * 0.85;
 
     const handleRemovePress = () => {
         showAlert(
@@ -905,12 +907,8 @@ function ConsensusBottomSheet({
                         { 
                             backgroundColor: isDark ? '#1c1c1e' : '#ffffff', 
                             width: '100%',
-                            ...Platform.select({
-                                web: {
-                                    height: 750,
-                                    maxHeight: '90%',
-                                }
-                            })
+                            height: sheetMaxHeight,
+                            paddingBottom: Platform.OS === 'ios' ? 30 : 20,
                         }
                     ]}>
                         {/* Handlebar */}
@@ -924,79 +922,83 @@ function ConsensusBottomSheet({
                             </TouchableOpacity>
                         </View>
 
-                        {/* Distribution Stats Row */}
-                        <View style={styles.distributionContainer}>
-                            <View style={styles.leftColumn}>
-                                <Text style={[styles.ratingNumber, { color: isDark ? '#ffffff' : '#000000' }]}>{averageRating}</Text>
-                                <View style={styles.starsRow}>
-                                    {Array.from({ length: 5 }).map((_, idx) => {
-                                        const ratingVal = parseFloat(averageRating) || 0.0;
-                                        const starNum = idx + 1;
-                                        const starColor = isDark ? '#ffffff' : '#000000'; // Minimalist stars color
-                                        if (ratingVal >= starNum) {
-                                            return <Ionicons key={idx} name="star" size={14} color={starColor} />;
-                                        } else if (ratingVal > starNum - 1) {
-                                            return <Ionicons key={idx} name="star-half" size={14} color={starColor} />;
-                                        } else {
-                                            return <Ionicons key={idx} name="star-outline" size={14} color={starColor} />;
-                                        }
-                                    })}
-                                </View>
-                                <Text style={styles.ratingCount}>{totalCount} {totalCount === 1 ? 'Rating' : 'Ratings'}</Text>
-                            </View>
-
-                            <View style={styles.rightColumn}>
-                                {/* 5 Star Progress Bar */}
-                                <View style={styles.progressBarRow}>
-                                    <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>5 ★</Text>
-                                    <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
-                                        <View style={[styles.progressFill, { width: getStarPercentage(5) }]} />
-                                    </View>
-                                </View>
-                                {/* 4 Star Progress Bar */}
-                                <View style={styles.progressBarRow}>
-                                    <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>4 ★</Text>
-                                    <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
-                                        <View style={[styles.progressFill, { width: getStarPercentage(4) }]} />
-                                    </View>
-                                </View>
-                                {/* 3 Star Progress Bar */}
-                                <View style={styles.progressBarRow}>
-                                    <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>3 ★</Text>
-                                    <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
-                                        <View style={[styles.progressFill, { width: getStarPercentage(3) }]} />
-                                    </View>
-                                </View>
-                                {/* 2 Star Progress Bar */}
-                                <View style={styles.progressBarRow}>
-                                    <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>2 ★</Text>
-                                    <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
-                                        <View style={[styles.progressFill, { width: getStarPercentage(2) }]} />
-                                    </View>
-                                </View>
-                                {/* 1 Star Progress Bar */}
-                                <View style={styles.progressBarRow}>
-                                    <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>1 ★</Text>
-                                    <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
-                                        <View style={[styles.progressFill, { width: getStarPercentage(1) }]} />
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Section Title */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                            <Text style={[styles.sectionTitle, { color: isDark ? '#ffffff' : '#000000', marginBottom: 0 }]}>Chowmate Verdicts</Text>
-                            {reviews.length > 2 && (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#00D2C4', textTransform: 'uppercase', letterSpacing: 0.5 }}>Scroll for more</Text>
-                                    <Ionicons name="arrow-down-circle-outline" size={12} color="#00D2C4" />
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Reviews List */}
+                        {/* Reviews List with Header Component for Distribution & Title */}
                         <FlatList
+                            style={{ flex: 1 }}
+                            ListHeaderComponent={
+                                <View>
+                                    {/* Distribution Stats Row */}
+                                    <View style={styles.distributionContainer}>
+                                        <View style={styles.leftColumn}>
+                                            <Text style={[styles.ratingNumber, { color: isDark ? '#ffffff' : '#000000' }]}>{averageRating}</Text>
+                                            <View style={styles.starsRow}>
+                                                {Array.from({ length: 5 }).map((_, idx) => {
+                                                    const ratingVal = parseFloat(averageRating) || 0.0;
+                                                    const starNum = idx + 1;
+                                                    const starColor = isDark ? '#ffffff' : '#000000'; // Minimalist stars color
+                                                    if (ratingVal >= starNum) {
+                                                        return <Ionicons key={idx} name="star" size={14} color={starColor} />;
+                                                    } else if (ratingVal > starNum - 1) {
+                                                        return <Ionicons key={idx} name="star-half" size={14} color={starColor} />;
+                                                    } else {
+                                                        return <Ionicons key={idx} name="star-outline" size={14} color={starColor} />;
+                                                    }
+                                                })}
+                                            </View>
+                                            <Text style={styles.ratingCount}>{totalCount} {totalCount === 1 ? 'Rating' : 'Ratings'}</Text>
+                                        </View>
+
+                                        <View style={styles.rightColumn}>
+                                            {/* 5 Star Progress Bar */}
+                                            <View style={styles.progressBarRow}>
+                                                <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>5 ★</Text>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                    <View style={[styles.progressFill, { width: getStarPercentage(5) }]} />
+                                                </View>
+                                            </View>
+                                            {/* 4 Star Progress Bar */}
+                                            <View style={styles.progressBarRow}>
+                                                <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>4 ★</Text>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                    <View style={[styles.progressFill, { width: getStarPercentage(4) }]} />
+                                                </View>
+                                            </View>
+                                            {/* 3 Star Progress Bar */}
+                                            <View style={styles.progressBarRow}>
+                                                <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>3 ★</Text>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                    <View style={[styles.progressFill, { width: getStarPercentage(3) }]} />
+                                                </View>
+                                            </View>
+                                            {/* 2 Star Progress Bar */}
+                                            <View style={styles.progressBarRow}>
+                                                <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>2 ★</Text>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                    <View style={[styles.progressFill, { width: getStarPercentage(2) }]} />
+                                                </View>
+                                            </View>
+                                            {/* 1 Star Progress Bar */}
+                                            <View style={styles.progressBarRow}>
+                                                <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>1 ★</Text>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                    <View style={[styles.progressFill, { width: getStarPercentage(1) }]} />
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    {/* Section Title */}
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                        <Text style={[styles.sectionTitle, { color: isDark ? '#ffffff' : '#000000', marginBottom: 0 }]}>Chowmate Verdicts</Text>
+                                        {reviews.length > 2 && (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                <Text style={{ fontSize: 10, fontWeight: '900', color: '#00D2C4', textTransform: 'uppercase', letterSpacing: 0.5 }}>Scroll for more</Text>
+                                                <Ionicons name="arrow-down-circle-outline" size={12} color="#00D2C4" />
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            }
                             data={reviews}
                             keyExtractor={item => item.id}
                             ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: isDark ? '#2c2c2e' : '#e5e5ea' }]} />}
