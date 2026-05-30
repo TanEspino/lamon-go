@@ -91,7 +91,7 @@ export default function FeedScreen() {
             return {
                 id: r.id,
                 user_id: r.user_id,
-                username: r.profiles?.username || r.profiles?.full_name || 'Guest',
+                username: r.profiles?.username || 'Guest',
                 avatar_url: r.profiles?.avatar_url || '',
                 restaurant_name: r.restaurant_name,
                 dish_name: r.dish_name,

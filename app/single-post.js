@@ -45,7 +45,7 @@ export default function SinglePostScreen() {
                 setPost({
                     id: data.id,
                     user_id: data.user_id,
-                    username: data.profiles?.username || data.profiles?.full_name || 'Guest',
+                    username: data.profiles?.username || 'Guest',
                     avatar_url: data.profiles?.avatar_url || '',
                     restaurant_name: data.restaurant_name,
                     dish_name: data.dish_name,

@@ -665,14 +665,9 @@ export default function UnifiedQRCodeScreen() {
                                             source={{ uri: scannedProfile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
                                             className="w-20 h-20 rounded-full border-2 border-turquoise mb-3"
                                         />
-                                        <Text style={{ fontSize: 20, fontWeight: '900', color: profileCardTextColor, marginBottom: 4 }}>
+                                        <Text style={{ fontSize: 20, fontWeight: '900', color: profileCardTextColor, marginBottom: 24 }}>
                                             @{scannedProfile.username || 'Guest'}
                                         </Text>
-                                        {scannedProfile.full_name && (
-                                            <Text style={{ fontSize: 14, color: profileCardSubTextColor, marginBottom: 24 }}>
-                                                {scannedProfile.full_name}
-                                            </Text>
-                                        )}
 
                                         <View style={{ flexDirection: 'row', width: '100%', marginTop: 8 }}>
                                             <TouchableOpacity

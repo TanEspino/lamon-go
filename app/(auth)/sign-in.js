@@ -140,7 +140,6 @@ export default function SignInScreen() {
             const { data, error } = await supabase.auth.signInAnonymously({
                 options: {
                     data: {
-                        full_name: 'Lamon Go Guest',
                         avatar_url: 'https://placehold.co/100x100/png?text=Guest'
                     }
                 }
@@ -194,7 +193,6 @@ export default function SignInScreen() {
                     password: password,
                     options: {
                         data: {
-                            full_name: email.trim().split('@')[0],
                             avatar_url: `https://placehold.co/100x100/png?text=${encodeURIComponent(email.trim()[0].toUpperCase())}`
                         }
                     }

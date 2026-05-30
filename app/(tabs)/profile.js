@@ -692,14 +692,6 @@ export default function ProfileScreen() {
                                                     >
                                                         @{item.profile.username || 'Guest'}
                                                     </Text>
-                                                    {item.profile.full_name && (
-                                                        <Text 
-                                                            style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.profile.full_name}
-                                                        </Text>
-                                                    )}
                                                 </View>
                                             </TouchableOpacity>
                                         ) : (
@@ -724,14 +716,6 @@ export default function ProfileScreen() {
                                                             </Text>
                                                         </View>
                                                     </View>
-                                                    {item.profile.full_name && (
-                                                        <Text 
-                                                            style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.profile.full_name}
-                                                        </Text>
-                                                    )}
                                                 </View>
                                             </View>
                                         )}

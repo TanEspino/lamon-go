@@ -305,7 +305,7 @@ export default function DiscoverScreen() {
             return {
                 id: r.id,
                 user_id: r.user_id,
-                username: r.profiles?.username || r.profiles?.full_name || 'Guest',
+                username: r.profiles?.username || 'Guest',
                 avatar_url: r.profiles?.avatar_url || '',
                 restaurant_name: r.restaurant_name,
                 dish_name: r.dish_name,
@@ -1635,9 +1635,6 @@ export default function DiscoverScreen() {
                                     />
                                     <View className="flex-1">
                                         <Text className="font-extrabold text-neutral-800 dark:text-white text-sm">
-                                            {item.full_name || `@${item.username}`}
-                                        </Text>
-                                        <Text className="text-gray-400 dark:text-zinc-500 text-xs font-bold mt-0.5">
                                             @{item.username || 'guest'}
                                         </Text>
                                     </View>

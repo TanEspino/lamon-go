@@ -1074,7 +1074,7 @@ function ConsensusBottomSheet({
                                                     </View>
                                                 )}
                                             </View>
-                                            <View style={styles.reviewerRatingRow}>
+                                            <View style={[styles.reviewerRatingRow, { backgroundColor: isDark ? '#151C2E' : '#f2f2f7' }]}>
                                                 <Ionicons name="star" size={10} color={isDark ? '#ffffff' : '#000000'} />
                                                 <Text style={[styles.reviewerRatingText, { color: isDark ? '#ffffff' : '#1c1c1e' }]}>{item.rating}.0</Text>
                                             </View>
