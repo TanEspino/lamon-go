@@ -52,7 +52,7 @@ export default function PrivacyPolicyScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <Animated.View 
                 style={{ 
                     flex: 1, 
@@ -61,7 +61,15 @@ export default function PrivacyPolicyScreen() {
                 }}
             >
                 {/* Premium Sticky Header */}
-                <View className="flex-row items-center px-4 bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60 }}>
+                <View 
+                    className="flex-row items-center px-4" 
+                    style={{ 
+                        height: 60,
+                        backgroundColor: isDark ? '#0B1326' : '#F3F4F6',
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
+                    }}
+                >
                     <TouchableOpacity 
                         onPress={handleClose} 
                         className="p-2 -ml-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-800"
@@ -76,6 +84,7 @@ export default function PrivacyPolicyScreen() {
                     contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 60 }}
                     showsVerticalScrollIndicator={true}
                     className="flex-1"
+                    style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}
                 >
                     {/* Title Section */}
                     <Text className="text-3xl font-extrabold text-gray-900 dark:text-zinc-50 tracking-tight">
@@ -86,7 +95,10 @@ export default function PrivacyPolicyScreen() {
                     </Text>
 
                     {/* Divider */}
-                    <View className="h-[1px] bg-gray-200 dark:bg-zinc-800 mb-6" />
+                    <View 
+                        className="h-[1px] mb-6" 
+                        style={{ backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB' }} 
+                    />
 
                     {/* Intro */}
                     <Text className="text-base text-gray-600 dark:text-zinc-300 leading-relaxed mb-6">

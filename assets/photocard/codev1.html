@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chowmate Recommender Photocard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-primary-fixed-variant": "#005049",
+                "on-tertiary": "#ffffff",
+                "surface-dim": "#dcd9d9",
+                "outline": "#6b7a77",
+                "on-secondary-fixed": "#40000c",
+                "tertiary": "#815600",
+                "on-surface": "#1c1b1b",
+                "surface-container-highest": "#e5e2e1",
+                "on-error-container": "#93000a",
+                "on-secondary-container": "#fffbff",
+                "on-primary-fixed": "#00201d",
+                "on-tertiary-fixed": "#291800",
+                "primary-fixed": "#61f9e9",
+                "on-error": "#ffffff",
+                "background": "#fcf9f8",
+                "tertiary-container": "#ffbe59",
+                "secondary-container": "#e21e49",
+                "secondary-fixed": "#ffdada",
+                "tertiary-fixed": "#ffddb1",
+                "on-surface-variant": "#3c4a47",
+                "surface-container-low": "#f6f3f2",
+                "error-container": "#ffdad6",
+                "surface": "#fcf9f8",
+                "on-background": "#1c1b1b",
+                "outline-variant": "#bacac6",
+                "error": "#ba1a1a",
+                "primary": "#006a62",
+                "surface-tint": "#006a62",
+                "inverse-on-surface": "#f3f0ef",
+                "on-tertiary-fixed-variant": "#624000",
+                "primary-container": "#40e0d0",
+                "on-tertiary-container": "#744d00",
+                "surface-container-lowest": "#ffffff",
+                "tertiary-fixed-dim": "#fbbb56",
+                "inverse-primary": "#3adccc",
+                "surface-container": "#f0eded",
+                "surface-bright": "#fcf9f8",
+                "on-primary-container": "#006058",
+                "on-secondary": "#ffffff",
+                "secondary": "#ba0035",
+                "surface-container-high": "#eae7e7",
+                "surface-variant": "#e5e2e1",
+                "secondary-fixed-dim": "#ffb3b6",
+                "on-secondary-fixed-variant": "#920028",
+                "on-primary": "#ffffff",
+                "primary-fixed-dim": "#3adccc",
+                "inverse-surface": "#313030",
+                "turquoise": "#40E0D0",
+                "rose": "#E11D48"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "gutter": "24px",
+                "margin-desktop": "64px",
+                "container-max": "1280px",
+                "unit": "8px",
+                "margin-mobile": "20px"
+        },
+        "fontFamily": {
+                "label-sm": [
+                        "Inter"
+                ],
+                "headline-lg": [
+                        "Playfair Display"
+                ],
+                "headline-lg-mobile": [
+                        "Playfair Display"
+                ],
+                "body-lg": [
+                        "Inter"
+                ],
+                "headline-md": [
+                        "Playfair Display"
+                ],
+                "label-md": [
+                        "Inter"
+                ],
+                "display-lg-mobile": [
+                        "Playfair Display"
+                ],
+                "body-md": [
+                        "Inter"
+                ],
+                "display-lg": [
+                        "Playfair Display"
+                ]
+        },
+        "fontSize": {
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "32px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "40px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "display-lg": [
+                        "64px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fcf9f8; /* background */
+        }
+        /* Soft, high-end ambient shadow */
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center p-4">
+<!-- TopAppBar -->
+<main class="w-full max-w-md mx-auto">
+<!-- PhotoCard Component -->
+<article class="bg-surface rounded-xl overflow-hidden ambient-shadow flex flex-col relative">
+<!-- 1. Header -->
+<header class="flex items-center justify-between p-unit px-margin-mobile border-b border-surface-container-highest">
+<div class="flex items-center gap-3">
+<img alt="User Avatar" class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A small circular user avatar image representing a food critic or foodie user in a premium culinary app. Professional lighting, sophisticated color palette, complementing the surrounding white surface and high-end typography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1UVyAMvR7fr2HMJmNR3LGOq-AniQIckh9zFrT0xEJHCIfbzlG9goFz5ldZcPJToM4g59fr1LvYydLUMfhJJUqegJ4xpF3sybLKuKsCJThAhWD9NqwHWvH1fBAm1-e-WGT2xLXSpaOiA2yARE7DmDFYE7YTXVfE4JF7euOB1mI9nl8WaNeMA-3nmncfaloiGUA21GuzH3oVmvl-Rej1S9UrqsohvJN5Qkzt4zhtU93x3ztj_7sU_g_BO77eGBLi6sCcDfWWi_xneKA"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">@foodie_explorer</span>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Oct 12, 2023</span><span class="material-symbols-outlined text-[16px] text-on-surface-variant" data-icon="group">group</span>
+</div>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-rose bg-surface-container px-2 py-0.5 rounded-full border border-rose uppercase">Chowmate Recommended</span>
+</header>
+<!-- 2. Media -->
+<div class="w-full relative aspect-square">
+<img alt="Pesto Linguine with Pine Nuts" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi03d2b5CJkoLOb3LMczIWsgMUkonSpOzC8o-q0CTTVQFuCNDiTgE9YrlnNhlHWaidO4TKa0aPS1s-e5tpdtSrXLZ1EJNM-ECMJ2ejqAd-DLSXp8sCuhRtapfRiv4EQ1kjYTNzQ6D0DqNaJmF35fSA_YWbIJUclNeWWQnqCt72w7cbcx87SooulsWZ3FhKKU-m6mX0JUEV362nTbJD6HdROtkiCPmenOfS7RuRMrx-Fe9MlRPiABUlYpLU9N0MWZLjVNRwCpwWupMx"/>
+</div>
+<!-- 3. Info Block -->
+<div class="flex flex-col relative pt-4 px-margin-mobile">
+<!-- Vertical Accent Line for Recommended -->
+<div class="absolute left-0 top-4 bottom-0 w-1 bg-turquoise rounded-r-full"></div>
+<div class="flex justify-between items-start mb-3">
+<div class="flex-1">
+<h2 class="font-semibold text-lg text-on-surface leading-tight">Pesto Linguine with Pine Nuts</h2>
+</div>
+<div class="flex items-center gap-1.5 ml-4 bg-surface-container-low px-3 py-1 rounded-full">
+<span class="material-symbols-outlined text-[20px] filled text-rose" data-icon="star">star</span>
+<span class="font-label-md text-[16px] font-bold text-on-surface">5</span>
+</div>
+</div>
+<!-- Dedicated Metadata Bar -->
+<div class="flex items-center gap-1 py-2 border-y border-surface-variant bg-surface-container-lowest/50">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant" data-icon="location_on">location_on</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+            Trattoria Milano • <span class="text-on-surface font-bold">$450</span>
+</span>
+</div>
+</div>
+<!-- 4. Verdict Block -->
+<!-- 5. Body -->
+<div class="mb-margin-mobile mt-4">
+<p class="font-body-md text-body-md text-on-surface px-margin-mobile leading-relaxed">
+                    Finally tried the famous pesto here. It lived up to the hype and more. The pine nuts add a perfect crunch... 
+                    <button class="font-label-md text-label-md text-turquoise ml-1 hover:underline">Read More</button>
+</p>
+</div>
+<!-- 6. Footer -->
+<footer class="flex justify-between items-center p-unit px-margin-mobile border-t border-surface-container-highest">
+<div class="flex items-center gap-4"><button class="flex items-center justify-center bg-turquoise text-white w-10 h-10 rounded-full hover:bg-turquoise/90 transition-colors shadow-sm" title="Add Verdict">
+<span class="material-symbols-outlined text-[24px] filled" data-icon="hotel_class" style="font-variation-settings: 'FILL' 1;">hotel_class</span>
+</button><button class="flex items-center hover:text-on-primary transition-colors rounded-full hover:bg-turquoise/90 gap-1 bg-turquoise text-on-primary" style="border-radius: 20px; padding: 4px 8px;"><span class="material-symbols-outlined text-[20px]" data-icon="groups">groups</span><span class="font-label-md text-body-md font-semibold">3.0</span><span class="material-symbols-outlined text-[24px]" data-icon="chevron_right">chevron_right</span></button></div>
+<button class="text-rose transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-container"><span class="material-symbols-outlined filled text-rose text-[24px]" data-icon="bookmark" style='font-variation-settings: "FILL" 1;'>bookmark</span></button>
+</footer>
+</article>
+</main>
+<!-- BottomNavBar -->
+</body></html>

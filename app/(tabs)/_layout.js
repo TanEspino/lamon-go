@@ -34,10 +34,10 @@ export default function TabLayout() {
     };
 
     return (
-        <View className="flex-1 flex-row bg-background dark:bg-zinc-950">
+        <View className="flex-1 flex-row bg-background dark:bg-[#0B1326]">
             {/* Left Vertical Sidebar (Visible only on large screens) */}
             {isLargeScreen && (
-                <View className="w-12 bg-gray-50 dark:bg-[#09090B] border-r border-gray-200 dark:border-zinc-800 flex-col items-center py-6 justify-between" style={{ height: '100%' }}>
+                <View className="w-12 bg-gray-50 dark:bg-[#0B1326]" style={{ height: '100%', borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB' }}>
                     {/* Top Section: Spacer */}
                     <View style={{ height: 10 }} />
 
@@ -45,7 +45,15 @@ export default function TabLayout() {
                     <View className="flex-col items-center space-y-6 flex-1 justify-center">
                         {/* Feed Tab */}
                         <TouchableOpacity 
-                             onPress={() => router.push('/')}
+                             onPress={() => {
+                                 if (isActive('index')) {
+                                     if (Platform.OS === 'web') {
+                                         window.dispatchEvent(new CustomEvent('scroll-to-top-feed'));
+                                     }
+                                 } else {
+                                     router.push('/');
+                                 }
+                             }}
                              className="p-2.5 rounded-2xl items-center justify-center"
                              style={{ backgroundColor: isActive('index') ? (isDark ? 'rgba(225, 29, 72, 0.15)' : '#FFF1F2') : 'transparent' }}
                              activeOpacity={0.7}
@@ -125,7 +133,7 @@ export default function TabLayout() {
             )}
 
             {/* Right Side Screen Content Area */}
-            <View className="flex-1 relative bg-white dark:bg-zinc-950">
+            <View className="flex-1 relative bg-white dark:bg-[#0B1326]">
                 <Tabs
                     screenOptions={({ route }) => ({
                         headerShown: false,
@@ -135,9 +143,9 @@ export default function TabLayout() {
                         safeAreaInsets: { bottom: 0, top: 0, left: 0, right: 0 }, // Prevent safe area paddings from offsetting icons
                         tabBarStyle: {
                             display: isLargeScreen ? 'none' : 'flex', // Show bottom tab bar only on mobile!
-                            backgroundColor: isDark ? '#09090B' : '#F9FAFB', 
+                            backgroundColor: isDark ? '#0B1326' : '#F9FAFB', 
                             borderTopWidth: 1,
-                            borderTopColor: isDark ? '#27272A' : '#E5E7EB',
+                            borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
                             height: 65,
                             paddingBottom: 0,
                             paddingTop: 0,
@@ -191,12 +199,12 @@ export default function TabLayout() {
                                                     height: 30,
                                                     borderRadius: 15,
                                                     borderWidth: focused ? 2 : 1,
-                                                    borderColor: focused ? '#00D2C4' : (isDark ? '#27272A' : '#E5E5E5'),
+                                                    borderColor: focused ? '#E11D48' : (isDark ? '#27272A' : '#E5E5E5'),
                                                 }}
                                                 resizeMode="cover"
                                             />
                                         ) : (
-                                            <Ionicons size={24} name={focused ? "person" : "person-outline"} color={focused ? '#00D2C4' : color} />
+                                            <Ionicons size={24} name={focused ? "person" : "person-outline"} color={focused ? '#E11D48' : color} />
                                         )}
                                     </View>
                                 );
@@ -210,7 +218,19 @@ export default function TabLayout() {
                         }
                     })}
                 >
-                    <Tabs.Screen name="index" options={{ title: 'Feed', tabBarLabel: 'Feed' }} />
+                    <Tabs.Screen 
+                        name="index" 
+                        options={{ title: 'Feed', tabBarLabel: 'Feed' }} 
+                        listeners={({ navigation }) => ({
+                            tabPress: (e) => {
+                                if (pathname === '/' || pathname === '/index') {
+                                    if (Platform.OS === 'web') {
+                                        window.dispatchEvent(new CustomEvent('scroll-to-top-feed'));
+                                    }
+                                }
+                            },
+                        })}
+                    />
                     <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarLabel: 'Discover' }} />
                     <Tabs.Screen 
                         name="create" 

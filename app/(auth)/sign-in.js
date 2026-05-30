@@ -140,7 +140,6 @@ export default function SignInScreen() {
             const { data, error } = await supabase.auth.signInAnonymously({
                 options: {
                     data: {
-                        full_name: 'Lamon Go Guest',
                         avatar_url: 'https://placehold.co/100x100/png?text=Guest'
                     }
                 }
@@ -194,7 +193,6 @@ export default function SignInScreen() {
                     password: password,
                     options: {
                         data: {
-                            full_name: email.trim().split('@')[0],
                             avatar_url: `https://placehold.co/100x100/png?text=${encodeURIComponent(email.trim()[0].toUpperCase())}`
                         }
                     }
@@ -239,8 +237,8 @@ export default function SignInScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-gray-100 dark:bg-zinc-950 px-6"
-            style={{ flex: 1 }}
+            style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#F3F4F6' }}
+            className="px-6"
         >
             <ScrollView 
                 contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: 40, paddingBottom: 90 }}
@@ -250,7 +248,12 @@ export default function SignInScreen() {
                 <View className="items-center mb-10 mt-4">
                     <Image 
                         source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')} 
-                        style={{ width: 280, height: 80 }} 
+                        style={[
+                            { width: 280, height: 80 },
+                            isDark && Platform.OS === 'web' && { 
+                                filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' 
+                            }
+                        ]} 
                         resizeMode="contain" 
                     />
                     <Text className="text-gray-500 dark:text-zinc-400 mt-2 italic text-lg">Gotta eat 'em all</Text>
@@ -261,7 +264,22 @@ export default function SignInScreen() {
                     <TouchableOpacity
                         onPress={() => handleOAuth('google')}
                         disabled={loading}
-                        className="flex-row items-row items-center justify-center bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl space-x-3 shadow-sm mb-3"
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: isDark ? '#151C2E' : '#FFFFFF',
+                            borderWidth: 1,
+                            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                            borderRadius: 12,
+                            padding: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: isDark ? 0 : 0.05,
+                            shadowRadius: 2,
+                            elevation: 2,
+                            marginBottom: 12,
+                        }}
                     >
                         <Ionicons name="logo-google" size={24} color="#DB4437" style={{ marginRight: 8 }} />
                         <Text className="font-semibold text-gray-700 dark:text-zinc-100 text-lg">Continue with Google</Text>
@@ -288,22 +306,43 @@ export default function SignInScreen() {
 
                             {/* Divider */}
                             <View className="flex-row items-center my-4">
-                                <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
+                                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB' }} />
                                 <Text className="mx-4 text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Or Use Email</Text>
-                                <View className="flex-1 h-[1px] bg-gray-300 dark:bg-zinc-800" />
+                                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB' }} />
                             </View>
 
                             {/* Custom Email Form Toggle */}
                             {!showEmailForm ? (
                                 <TouchableOpacity
                                     onPress={() => setShowEmailForm(true)}
-                                    className="flex-row items-center justify-center border border-dashed border-gray-300 dark:border-zinc-800 p-4 rounded-xl space-x-3"
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderWidth: 1,
+                                        borderStyle: 'dashed',
+                                        borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#D1D5DB',
+                                        borderRadius: 12,
+                                        padding: 16,
+                                    }}
                                 >
                                     <Ionicons name="mail-outline" size={20} color={isDark ? '#A1A1AA' : '#71717A'} style={{ marginRight: 8 }} />
                                     <Text className="font-medium text-gray-500 dark:text-zinc-400 text-base">Sign In or Create Account with Email</Text>
                                 </TouchableOpacity>
                             ) : (
-                                <View className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm space-y-4">
+                                <View style={{
+                                    backgroundColor: isDark ? '#151C2E' : '#FFFFFF',
+                                    borderWidth: 1,
+                                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                                    padding: 20,
+                                    borderRadius: 16,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: isDark ? 0 : 0.05,
+                                    shadowRadius: 4,
+                                    elevation: 3,
+                                    gap: 16,
+                                }}>
                                     <View className="flex-row justify-between items-center mb-2">
                                         <Text className="text-lg font-bold text-gray-800 dark:text-zinc-150">
                                             {isSignUp ? "Create a New Account" : "Sign In with Email"}
@@ -324,7 +363,17 @@ export default function SignInScreen() {
                                     <View className="space-y-1">
                                         <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Email Address</Text>
                                         <TextInput
-                                            className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
+                                            style={{
+                                                backgroundColor: isDark ? '#09111E' : '#F9FAFB',
+                                                color: isDark ? '#FFFFFF' : '#0B1326',
+                                                padding: 12,
+                                                borderRadius: 12,
+                                                borderWidth: 1,
+                                                borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#D1D5DB',
+                                                fontSize: 16,
+                                                fontWeight: '500',
+                                                outlineStyle: 'none',
+                                            }}
                                             placeholder="your-email@example.com"
                                             placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
                                             value={email}
@@ -340,7 +389,17 @@ export default function SignInScreen() {
                                     <View className="space-y-1">
                                         <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Password</Text>
                                         <TextInput
-                                            className="bg-gray-50 dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 font-medium text-base"
+                                            style={{
+                                                backgroundColor: isDark ? '#09111E' : '#F9FAFB',
+                                                color: isDark ? '#FFFFFF' : '#0B1326',
+                                                padding: 12,
+                                                borderRadius: 12,
+                                                borderWidth: 1,
+                                                borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#D1D5DB',
+                                                fontSize: 16,
+                                                fontWeight: '500',
+                                                outlineStyle: 'none',
+                                            }}
                                             placeholder="••••••••"
                                             placeholderTextColor={isDark ? '#52525B' : '#A1A1AA'}
                                             value={password}

@@ -66,8 +66,8 @@ export const CustomAlert = () => {
             <View style={[
                 styles.card,
                 {
-                    backgroundColor: isDark ? '#18181b' : '#ffffff',
-                    borderColor: isDark ? '#27272a' : '#e5e7eb'
+                    backgroundColor: isDark ? '#151C2E' : '#ffffff',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'
                 }
             ]}>
                 {alert.title && (
@@ -81,7 +81,7 @@ export const CustomAlert = () => {
                 {alert.message && (
                     <Text style={[
                         styles.message,
-                        { color: isDark ? '#d4d4d8' : '#4b5563' }
+                        { color: isDark ? '#ffffff' : '#4b5563' }
                     ]}>
                         {alert.message}
                     </Text>
@@ -122,6 +122,7 @@ export const CustomAlert = () => {
                                     title={btn.text}
                                     onPress={onPress}
                                     variant={variant}
+                                    icon={btn.icon}
                                 />
                             </View>
                         );

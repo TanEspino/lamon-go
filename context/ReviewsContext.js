@@ -109,7 +109,7 @@ export function ReviewsProvider({ children }) {
                 return {
                     id: r.id,
                     user_id: r.user_id,
-                    username: r.profiles?.username || r.profiles?.full_name || 'Guest',
+                    username: r.profiles?.username || 'Guest',
                     avatar_url: r.profiles?.avatar_url || 'https://placehold.co/100x100/png?text=?',
                     restaurant_name: r.restaurant_name,
                     dish_name: r.dish_name,
@@ -205,7 +205,7 @@ export function ReviewsProvider({ children }) {
             const formatted = {
                 id: data.id,
                 user_id: data.user_id,
-                username: profile?.username || profile?.full_name || 'Guest',
+                username: profile?.username || 'Guest',
                 avatar_url: profile?.avatar_url || 'https://placehold.co/100x100/png?text=?',
                 restaurant_name: data.restaurant_name,
                 dish_name: data.dish_name,
@@ -255,7 +255,7 @@ export function ReviewsProvider({ children }) {
             const formatted = {
                 id: data.id,
                 user_id: data.user_id,
-                username: profile?.username || profile?.full_name || 'Guest',
+                username: profile?.username || 'Guest',
                 avatar_url: profile?.avatar_url || 'https://placehold.co/100x100/png?text=?',
                 restaurant_name: data.restaurant_name,
                 dish_name: data.dish_name,

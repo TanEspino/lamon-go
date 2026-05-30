@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>lamon.go - Home Feed</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline": "#859491",
+                        "primary-container": "#40e0d0",
+                        "surface-tint": "#3adccc",
+                        "on-primary": "#003732",
+                        "on-secondary-container": "#ffdcdc",
+                        "on-surface": "#dae2fd",
+                        "on-error": "#690005",
+                        "inverse-primary": "#006a62",
+                        "surface": "#0b1326",
+                        "background": "#0b1326",
+                        "secondary-container": "#cc003c",
+                        "surface-variant": "#2d3449",
+                        "on-background": "#dae2fd",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary": "#2d3133",
+                        "surface-container-high": "#222a3d",
+                        "on-tertiary-fixed": "#191c1e",
+                        "surface-container-highest": "#2d3449",
+                        "on-secondary": "#68001a",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "on-secondary-fixed": "#40000c",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "tertiary": "#e4e6e8",
+                        "surface-dim": "#0b1326",
+                        "inverse-surface": "#dae2fd",
+                        "surface-bright": "#31394d",
+                        "secondary-fixed-dim": "#ffb3b6",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed": "#61f9e9",
+                        "on-primary-fixed": "#00201d",
+                        "on-tertiary-container": "#525557",
+                        "inverse-on-surface": "#283044",
+                        "tertiary-container": "#c8cacc",
+                        "secondary-fixed": "#ffdada",
+                        "on-primary-container": "#006058",
+                        "secondary": "#ffb3b6",
+                        "primary": "#66fdec",
+                        "on-secondary-fixed-variant": "#920028",
+                        "on-surface-variant": "#bacac6",
+                        "tertiary-fixed": "#e0e3e5",
+                        "primary-fixed-dim": "#3adccc",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#171f33",
+                        "outline-variant": "#3c4a47",
+                        "on-primary-fixed-variant": "#005049",
+                        // Custom Brand Colors
+                        "brand-turquoise": "#40E0D0",
+                        "brand-rose": "#E11D48"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "stack-lg": "48px",
+                        "stack-md": "24px",
+                        "stack-sm": "12px",
+                        "gutter": "16px",
+                        "container-margin": "24px",
+                        "base": "8px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-lg": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+                        "label-sm": ["12px", { lineHeight: "16px", fontWeight: "600" }],
+                        "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #3c4a47;
+            border-radius: 20px;
+        }
+        
+        .glass-nav {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col pb-24 pt-16">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter h-16 max-w-container-max mx-auto bg-surface/70 dark:bg-surface-on-surface/70 border-b border-outline-variant/30 glass-nav transition-opacity">
+<button class="text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity scale-95 active:duration-150 p-2 rounded-full hover:bg-surface-variant/50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim tracking-tight">
+            lamon.<span class="text-brand-turquoise">go</span>
+</h1>
+<button class="text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity scale-95 active:duration-150 p-2 rounded-full hover:bg-surface-variant/50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">search</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow max-w-[600px] mx-auto w-full px-4 md:px-gutter mt-stack-md flex flex-col gap-stack-lg">
+<!-- Feed List -->
+<div class="flex flex-col gap-stack-lg">
+<!-- Feed Item 1: The 'Dito' Card -->
+<article class="bg-surface-container-low rounded-xl overflow-hidden shadow-sm border border-white/5 flex flex-col relative group">
+<!-- Card Header -->
+<div class="flex justify-between items-center p-4 absolute top-0 left-0 w-full z-10 bg-gradient-to-b from-surface/80 to-transparent">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant border border-outline/30 overflow-hidden">
+<img alt="Author avatar" class="w-full h-full object-cover" data-alt="A striking black and white avatar image featuring a minimalist geometric design. The aesthetic is clean and modern, fitting perfectly within a dark-mode editorial layout, highlighting sharp contrasts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpeM7-FCViTREPylQk650Vc86f84abFL1bh2VhOl4x7NNY0O3LVWbD3UXIebbTaTBBAE6M0mCNnAYyZG7Ts4nvycjkHfDIIuiz4vcTn3SQFMj0llbwjLz8B5P2Tu-G7Nf2uxakP6IwAsXejPDMckDTS7MOmyk84bAPxAbGA3kL7s_Z8tZsAcUhs5A1b7Rz7GbXSsKlRdsw1I1mUrHb8pFTR2JD4-SiL6PLSiZPtu1UrP7YtijGl062wZbfp6csbcrcgzX45eAsUrD-"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-white">@lamongotester</span>
+<span class="text-xs text-outline font-medium">May 27, 2026 • 👥</span>
+</div>
+</div>
+<!-- Chowmate Badge -->
+<div class="bg-white text-black font-label-sm text-[10px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm font-bold">
+                        Chowmate Recommended
+                    </div>
+</div>
+<!-- Main Image Canvas -->
+<div class="w-full aspect-[4/5] md:aspect-square bg-surface-variant relative overflow-hidden">
+<img alt="Gourmet Dish" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A highly detailed, top-down photograph of a meticulously plated gourmet dish, featuring vibrant, fresh ingredients like seared tuna, microgreens, and a citrus glaze. The lighting is soft yet directional, creating subtle highlights and deep shadows that emphasize texture. The setting implies a high-end dining experience, captured with a minimalist, editorial aesthetic in mind." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoOFeSH6klaYzxctjOcZ89wDFqKoEGDVsGtusneo1oYosmYtUhuSREe23Vb3l1a7mfwCi9xsu4i3aY5M0XovkHsI_77QuQgtBwwMyBjaK19A6N5Qb3V4RLd2Li0e6SPuB3AzcwScmdqvOumkdCpELfl9kUzo4Epr_crmFh9XAKnoWsrhb4EG729BtXJyxIwULpwnpDLUWA5QrB6t50WLSVCArwAw8Ey7z0zwsXwxs1eCMtRgbgw5_wjQWb7bIfX9lIspvqHUh1NMJV"/>
+</div>
+<!-- Content Block -->
+<div class="p-5 flex flex-col gap-4 bg-surface-container-low relative">
+<!-- Decorative line -->
+<div class="absolute left-0 top-6 bottom-6 w-1 bg-brand-turquoise rounded-r-full"></div>
+<!-- Header & Rating -->
+<div class="flex justify-between items-start pl-3">
+<div class="flex flex-col">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-white mb-1">Dito</h2>
+<div class="flex items-center gap-2 text-sm text-outline font-medium">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span>Guada</span>
+<span>•</span>
+<span class="text-white font-semibold">₱ 548.00</span>
+</div>
+</div>
+<!-- OP Rating Pill -->
+<div class="bg-brand-rose text-white px-3 py-1 rounded-full flex items-center gap-1 shadow-[0_0_15px_rgba(225,29,72,0.3)]">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-lg text-label-lg">5</span>
+</div>
+</div>
+<!-- Description -->
+<p class="text-on-surface-variant text-sm line-clamp-3 pl-3 leading-relaxed">
+                        em ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et ...
+                    </p>
+<a class="text-brand-turquoise font-label-sm text-label-sm hover:underline pl-3 uppercase" href="#">Read More</a>
+<!-- Action Bar -->
+<div class="flex justify-between items-center mt-2 pl-3">
+<div class="flex items-center gap-3">
+<!-- Verdict Highlight -->
+<button class="w-10 h-10 rounded-full bg-brand-turquoise text-on-primary-container flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">stars</span>
+</button>
+<!-- Community Rating -->
+<button class="bg-brand-turquoise flex items-center gap-1 text-on-primary-container px-3 py-1.5 rounded-full font-label-sm text-label-sm hover:bg-brand-turquoise/80 transition-colors">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span>2.3</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<!-- Bookmark -->
+<button class="text-outline hover:text-brand-turquoise transition-colors">
+<span class="material-symbols-outlined text-2xl">bookmark_border</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Feed Item 2: Another Card -->
+<article class="bg-surface-container-low rounded-xl overflow-hidden shadow-sm border border-white/5 flex flex-col relative group opacity-90">
+<!-- Header -->
+<div class="flex justify-between items-center p-4 absolute top-0 left-0 w-full z-10 bg-gradient-to-b from-surface/80 to-transparent">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant border border-outline/30 overflow-hidden">
+<img alt="Author avatar" class="w-full h-full object-cover" data-alt="A portrait of a sophisticated woman used as an avatar profile picture. The lighting is soft and natural, emphasizing a serene expression. The color palette aligns with a premium, minimalist design system, utilizing muted tones and deep contrasts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD16tL40a1tZfty_bLPfC_C61IOTna8T0090Lekw4pa8hqn79jRMR7UJO8LYaTZtNyOi966e-YxEVWIAMCG64JufyYlK7tEEwwJSrX5FJRl9T2hE961hKAlkF4xyh-W5rRwJZFczzGe7lhaQEO46uPzxfuZcEdBTh-DZDBLD_br9udB1oIp2DGudGgEVP3lap1Vn_CNcStLkKkbecwekDGy9_39wQJm3n1GuOnPlli2ivmtGE57MhBF61MWng9_BAeQHnp6PQOEWORI"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-white">@manila_eats</span>
+<span class="text-xs text-outline font-medium">May 26, 2026 • 👤</span>
+</div>
+</div>
+</div>
+<!-- Main Image Canvas -->
+<div class="w-full aspect-[4/3] bg-surface-variant relative overflow-hidden">
+<img alt="Artisan Food" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A rustic yet elegant presentation of artisan bread and cured meats on a dark wooden board. The scene is lit with dramatic, moody lighting typical of high-end food photography, casting deep shadows that enhance the texture of the food. This image fits perfectly within a sophisticated, minimalist dark-mode editorial interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPu-uZVm9PGzMQmTVxk-oBvcq82E_1Y-0FC_VeCQtrPgkfCEFN9xOnkS0iPUl9rurLokfMMQESbJD0rowPPiXFlJkUG5kjASeny5prCO11oL_ig88K-ajU7Fs3VeByLQ1cuA_J_mkjcu8o44wbl4kMh4b61D_NSzso1HtwARNGu3VeZlwDuyFC6KD4IVYfBlJ6TAUJGTVOAD02l5PNAXT3TG0N4ZOEdKdvgt_pxvJVK9SNIy9oeK-MtLjItciNCif3_03DvjxQUjtc"/>
+</div>
+<!-- Content Block -->
+<div class="p-5 flex flex-col gap-4 bg-surface-container-low relative">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-white mb-1">Rustic Board</h2>
+<div class="flex items-center gap-2 text-sm text-outline font-medium">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span>Makati</span>
+<span>•</span>
+<span class="text-white font-semibold">₱ 850.00</span>
+</div>
+</div>
+<div class="bg-surface-variant text-white px-3 py-1 rounded-full flex items-center gap-1 border border-outline/30">
+<span class="material-symbols-outlined text-[16px] text-brand-turquoise" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-lg text-label-lg">4.2</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 bg-surface/90 glass-nav border-t border-outline-variant/30 safe-area-pb">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center text-brand-rose transition-colors scale-95 active:duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+</a>
+<!-- Explore -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container hover:text-brand-turquoise transition-colors scale-95 active:duration-200" href="#">
+<span class="material-symbols-outlined">explore</span>
+</a>
+<!-- Add (FAB Style) -->
+<a class="relative -top-5 w-14 h-14 rounded-full bg-brand-turquoise flex items-center justify-center shadow-[0_4px_20px_rgba(64,224,208,0.3)] hover:scale-105 transition-transform" href="#">
+<span class="material-symbols-outlined text-on-primary-container text-3xl">add</span>
+</a>
+<!-- Notifications -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container hover:text-brand-turquoise transition-colors scale-95 active:duration-200" href="#">
+<span class="material-symbols-outlined">notifications</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-secondary dark:text-on-secondary-container hover:text-brand-turquoise transition-colors scale-95 active:duration-200" href="#">
+<div class="w-6 h-6 rounded-full overflow-hidden border border-outline/50">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="Small circular avatar placeholder for the bottom navigation bar representing the user's profile. Minimalist and clear." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfALUUQ-D6xYxmYATMHi2RQpNRLwwbo-c9IX_iggCbSokjkg1rRoPto2MfEZa5SB9rGc69htrQ_B9iMmeRJX3KydW7D9FHhG2up3KMjyHX-AeCDekNa7MY6Tk8GetqPe7McIMr4hJZThWsAk-UHSLhzP-_jQQqSHfxFXPSucPCe1kq9ODsCz-nJrLNpb9xdt08IKI9p-l3BjXwy5okRPzUja7IfY2Mkt93bthv3-RRz-F7eqPuB-aivw3EbzMxOdgnxfw9DB3h29O8"/>
+</div>
+</a>
+</nav>
+<!-- Add safe area padding for modern mobile devices -->
+<style>
+        .safe-area-pb {
+            padding-bottom: env(safe-area-inset-bottom, 12px);
+        }
+    </style>
+</body></html>

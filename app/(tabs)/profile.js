@@ -176,19 +176,65 @@ export default function ProfileScreen() {
         }
     };
 
-    // Calculate dynamic columns based on ACTUAL measured layout width:
-    // - Narrow Mobile (< 360px): 2 columns (ultra-compact)
-    // - Standard Mobile (360px - 480px): 3 columns
-    // - Wide Screens / Tablets (> 480px): 4 columns
-    const numColumns = measuredWidth > 480 ? 4 : (measuredWidth >= 360 ? 3 : 2);
+    // Lock columns to exactly 2 to match the mockup!
+    const renderGridItem = (item, index) => {
+        const photos = Array.isArray(item.photos) 
+            ? item.photos 
+            : (item.photo_url ? String(item.photo_url).split(',').map(u => u.trim()).filter(Boolean) : []);
+        const photo = photos[0] || 'https://placehold.co/300x300/png?text=Food';
 
-    // Calculate item size with a safe margin to completely prevent subpixel rounding wraps
-    const itemSize = measuredWidth / numColumns - 0.5;
-
-    const getFlatListData = () => {
-        if (myReviews.length === 0) return [];
-        if (viewMode === 'grid') return [{ id: 'grid-wrap', isGrid: true }];
-        return myReviews;
+        return (
+            <TouchableOpacity 
+                onPress={() => {
+                    setTargetIndex(index);
+                    setViewMode('list');
+                }}
+                style={{ flex: 1/3, aspectRatio: 1, padding: 4 }}
+                activeOpacity={0.85}
+            >
+                <View style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    borderRadius: 12, 
+                    overflow: 'hidden',
+                    backgroundColor: isDark ? '#151C2E' : '#F3F4F6',
+                    position: 'relative'
+                }}>
+                    <Image 
+                        source={{ uri: photo }} 
+                        style={{ width: '100%', height: '100%' }} 
+                        resizeMode="cover"
+                    />
+                    {photos.length > 1 && (
+                        <View 
+                            style={{
+                                position: 'absolute',
+                                top: 6,
+                                left: 6,
+                                zIndex: 10
+                            }}
+                        >
+                            <Ionicons name="images" size={14} color="white" style={{ textShadowColor: 'black', textShadowRadius: 1 }} />
+                        </View>
+                    )}
+                    {item.visibility === 'recommended' && (
+                        <View 
+                            style={{
+                                position: 'absolute',
+                                top: 6,
+                                right: 6,
+                                zIndex: 10,
+                                backgroundColor: '#00D2C4',
+                                padding: 3,
+                                borderRadius: 999
+                            }}
+                        >
+                            <Ionicons name="star" size={8} color="#0B1326" />
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
     };
 
     const handleDelete = (id) => {
@@ -212,55 +258,9 @@ export default function ProfileScreen() {
         />
     );
 
-    const renderFlatListItem = ({ item }) => {
-        if (item.isGrid) {
-            return (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-                    {myReviews.map((review, idx) => (
-                        <TouchableOpacity
-                            key={review.id}
-                            onPress={() => {
-                                setTargetIndex(idx);
-                                setViewMode('list');
-                            }}
-                            activeOpacity={0.8}
-                            className="border-r border-b border-gray-200 dark:border-zinc-900 relative"
-                            style={{ width: itemSize, height: itemSize }}
-                        >
-                            <Image
-                                source={{ uri: (review.photos && review.photos[0]) || review.photo_url || 'https://placehold.co/200x200/png?text=Food' }}
-                                className="w-full h-full bg-gray-200 dark:bg-zinc-800"
-                                resizeMode="cover"
-                            />
-                            {review.photos && review.photos.length > 1 && (
-                                <View 
-                                    style={{
-                                        position: 'absolute',
-                                        top: 4,
-                                        left: 4,
-                                        zIndex: 10
-                                    }}
-                                >
-                                    <Ionicons name="images" size={16} color="white" style={{ textShadowColor: 'black', textShadowRadius: 1 }} />
-                                </View>
-                            )}
-                            {review.visibility === 'recommended' && (
-                                <View 
-                                    className="bg-amber-400 p-0.5 rounded-full shadow-sm"
-                                    style={{
-                                        position: 'absolute',
-                                        top: 4,
-                                        right: 4,
-                                        zIndex: 10
-                                    }}
-                                >
-                                    <Ionicons name="star" size={10} color="black" />
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            );
+    const renderFlatListItem = ({ item, index }) => {
+        if (viewMode === 'grid') {
+            return renderGridItem(item, index);
         }
         return renderListItem({ item });
     };
@@ -268,15 +268,43 @@ export default function ProfileScreen() {
     if (!profile) return null; // Or loading spinner
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <View 
                 onLayout={handleLayout}
                 style={{ flex: 1, width: '100%', maxWidth: maxAppWidth, alignSelf: 'center', position: 'relative' }}
             >
                 {/* Custom Header Container (Static at the top!) */}
-                <View className="bg-gray-100 dark:bg-zinc-950 items-center justify-center border-b border-gray-200 dark:border-zinc-800 relative" style={{ height: 60, width: '100%', zIndex: 10 }}>
-                    {/* Left Side QR Button */}
-                    <View style={{ position: 'absolute', left: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
+                <View 
+                    className="bg-gray-100 dark:bg-[#0B1326]" 
+                    style={{ 
+                        height: 60, 
+                        width: '100%', 
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        position: 'relative',
+                        zIndex: 10,
+                        backgroundColor: isDark ? '#0B1326' : '#FFFFFF',
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6'
+                    }}
+                >
+                    {/* Logo Wrapper */}
+                    <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                        <Image
+                            key={isDark ? 'dark' : 'light'}
+                            source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
+                            style={[
+                                { width: 160, height: 45 },
+                                isDark && Platform.OS === 'web' && { 
+                                    filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' 
+                                }
+                            ]}
+                            resizeMode="contain"
+                        />
+                    </View>
+
+                    {/* Left Actions Wrapper */}
+                    <View style={{ position: 'absolute', left: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity 
                             onPress={() => router.push('/qr-code')}
                             activeOpacity={0.7}
@@ -286,16 +314,8 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Centered Logo */}
-                    <Image
-                        key={isDark ? 'dark' : 'light'}
-                        source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                        style={{ width: 160, height: 45, alignSelf: 'center' }}
-                        resizeMode="contain"
-                    />
-
-                    {/* Right Side Buttons (Log Out) */}
-                    <View style={{ position: 'absolute', right: 16, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' }}>
+                    {/* Right Actions Wrapper */}
+                    <View style={{ position: 'absolute', right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity 
                             onPress={signOut}
                             activeOpacity={0.7}
@@ -310,109 +330,192 @@ export default function ProfileScreen() {
                 ref={flatListRef}
                 key={viewMode}
                 ListHeaderComponent={() => (
-                    <View className="bg-gray-50 dark:bg-zinc-950 pb-4">
+                    <View style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
                         {/* Top Section: Dashboard Header Details */}
-                        <View className="bg-gray-50 dark:bg-zinc-950 pb-4 pt-4 px-5 border-b border-gray-200 dark:border-zinc-800">
-                            {/* Centered Identity Row (Avatar + Bio) */}
-                            <View className="flex-row items-center justify-center mb-4 mt-2 px-4">
-                                {/* Avatar */}
-                                <View className="mr-5">
-                                    <View className="p-1 rounded-full border-[2px] border-turquoise">
-                                        <Image
-                                            source={{ uri: profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
-                                            className="w-20 h-20 rounded-full bg-gray-100 dark:bg-zinc-800"
-                                        />
-                                    </View>
+                        <View style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF', paddingTop: 20, paddingBottom: 12 }}>
+                            {/* Centered Identity Row */}
+                            <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 12 }}>
+                                {/* Centered Large Avatar Container */}
+                                <View style={{
+                                    width: 128,
+                                    height: 128,
+                                    borderRadius: 64,
+                                    borderWidth: 2,
+                                    borderColor: '#00D2C4',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 2,
+                                    backgroundColor: 'transparent',
+                                    shadowColor: '#00D2C4',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: isDark ? 0.35 : 0.15,
+                                    shadowRadius: 10,
+                                    elevation: 5
+                                }}>
+                                    <Image
+                                        source={{ uri: profile.avatar_url || 'https://placehold.co/120x120/png?text=User' }}
+                                        style={{ width: 116, height: 116, borderRadius: 58 }}
+                                    />
                                 </View>
 
-                                {/* Username & Bio */}
-                                <View className="flex-col justify-center flex-shrink items-start" style={{ maxWidth: 200 }}>
-                                    <View className="flex-row items-center mb-1">
-                                        <Text className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight" numberOfLines={1}>
-                                            @{profile.username}
-                                        </Text>
-                                    </View>
-                                    {profile.bio ? (
-                                        <View className="bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm">
-                                            <Text className="text-gray-600 dark:text-zinc-300 text-xs font-medium leading-tight italic" numberOfLines={3}>
-                                                {profile.bio}
-                                            </Text>
-                                        </View>
-                                    ) : null}
-                                </View>
+                                {/* Centered Username styled in Inter fontFamily from ReviewCard */}
+                                <Text 
+                                    style={{ 
+                                        fontFamily: Platform.OS === 'android' ? 'Inter-SemiBold' : 'Inter', 
+                                        fontSize: 32, 
+                                        color: isDark ? '#FFFFFF' : '#0B1326', 
+                                        textAlign: 'center',
+                                        marginTop: 18,
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    @{profile.username}
+                                </Text>
+
+                                {/* Center centered bio label styled in Inter-Regular from ReviewCard */}
+                                {profile.bio ? (
+                                    <Text 
+                                        style={{ 
+                                            color: isDark ? '#A1A1AA' : '#6B7280', 
+                                            fontSize: 13, 
+                                            textAlign: 'center', 
+                                            marginTop: 6, 
+                                            paddingHorizontal: 32,
+                                            lineHeight: 18,
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Regular' : 'Inter',
+                                            fontWeight: '400'
+                                        }}
+                                        numberOfLines={2}
+                                    >
+                                        {profile.bio}
+                                    </Text>
+                                ) : null}
                             </View>
   
-                            {/* Stats Row */}
-                            <View className="flex-row justify-between items-center mb-4 px-2">
-                                {/* Reviews Widget */}
-                                <View className="bg-white dark:bg-zinc-900 py-2 px-1 rounded-xl flex-1 mr-1.5 items-center justify-center border border-gray-200 dark:border-zinc-800 shadow-sm">
-                                    <Ionicons name="document-text-outline" size={16} color={isDark ? '#A3A3A3' : '#4B5563'} style={{ marginBottom: 2 }} />
-                                    <Text className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{totalReviews}</Text>
-                                    <Text className="text-gray-500 dark:text-zinc-400 text-[9px] font-bold uppercase tracking-wider">Reviews</Text>
+                            {/* Minimalist Stats Columns */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width: '100%', paddingHorizontal: 12, marginTop: 12, marginBottom: 20 }}>
+                                {/* Reviews column */}
+                                <View style={{ alignItems: 'center', flex: 1 }}>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
+                                        {totalReviews}
+                                    </Text>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
+                                        Reviews
+                                    </Text>
                                 </View>
                                 
-                                {/* 5 Stars Widget */}
-                                <View className="bg-white dark:bg-zinc-900 py-2 px-1 rounded-xl flex-1 mx-1 items-center justify-center border border-gray-200 dark:border-zinc-800 shadow-sm">
-                                    <Ionicons name="star" size={16} color="#14B8A6" style={{ marginBottom: 2 }} />
-                                    <Text className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{fiveStarCount}</Text>
-                                    <Text className="text-gray-500 dark:text-zinc-400 text-[9px] font-bold uppercase tracking-wider">5 Stars</Text>
+                                {/* 5 Stars column */}
+                                <View style={{ alignItems: 'center', flex: 1 }}>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
+                                        {fiveStarCount}
+                                    </Text>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
+                                        5 Stars
+                                    </Text>
                                 </View>
                                 
-                                {/* Places Widget */}
-                                <View className="bg-white dark:bg-zinc-900 py-2 px-1 rounded-xl flex-1 mx-1 items-center justify-center border border-gray-200 dark:border-zinc-800 shadow-sm">
-                                    <Ionicons name="map-outline" size={16} color={isDark ? '#A3A3A3' : '#4B5563'} style={{ marginBottom: 2 }} />
-                                    <Text className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{uniquePlaces}</Text>
-                                    <Text className="text-gray-500 dark:text-zinc-400 text-[9px] font-bold uppercase tracking-wider">Places</Text>
+                                {/* Places column */}
+                                <View style={{ alignItems: 'center', flex: 1 }}>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
+                                        {uniquePlaces}
+                                    </Text>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
+                                        Places
+                                    </Text>
                                 </View>
 
-                                {/* Buddies Widget (Clickable to view list modal) */}
-                                <TouchableOpacity 
-                                    onPress={openBuddiesList}
-                                    className="bg-white dark:bg-zinc-900 py-2 px-1 rounded-xl flex-1 ml-1.5 items-center justify-center border border-gray-200 dark:border-zinc-800 shadow-sm"
-                                    activeOpacity={0.7}
-                                >
-                                    <Ionicons name="people-outline" size={16} color="#E11D48" style={{ marginBottom: 2 }} />
-                                    <Text className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{buddyCount}</Text>
-                                    <Text className="text-gray-500 dark:text-zinc-400 text-[9px] font-bold uppercase tracking-wider">Chowmates</Text>
+                                {/* Chowmates column */}
+                                <TouchableOpacity onPress={openBuddiesList} style={{ alignItems: 'center', flex: 1 }} activeOpacity={0.7}>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
+                                        {buddyCount}
+                                    </Text>
+                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
+                                        Chowmates
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
   
-                            {/* Edit Profile Action Button */}
+                            {/* Centered Sleek Capsule Button */}
                             <TouchableOpacity 
                                 onPress={() => router.push('/onboarding')}
-                                className="bg-white dark:bg-zinc-900 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 items-center justify-center flex-row shadow-sm self-center"
-                                style={{ width: '95%' }}
+                                style={{ 
+                                    width: '55%', 
+                                    height: 42, 
+                                    borderRadius: 21, 
+                                    backgroundColor: isDark ? '#35E8D6' : '#004D40', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    alignSelf: 'center',
+                                    marginBottom: 16,
+                                    shadowColor: isDark ? '#35E8D6' : '#000',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: isDark ? 0.2 : 0.1,
+                                    shadowRadius: 6,
+                                    elevation: 4
+                                }}
                                 activeOpacity={0.8}
                             >
-                                <Text className="font-bold text-gray-900 dark:text-white text-sm">Edit Profile</Text>
+                                <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontWeight: 'bold', color: isDark ? '#0B1326' : '#FFFFFF', fontSize: 14 }}>
+                                    Edit Profile
+                                </Text>
                             </TouchableOpacity>
                         </View>
  
-                        {/* Action buttons removed - Edit is now in the top right header */}
-                        
-                        {/* View Mode Toggle (Differentiated from IG) */}
-                        <View className="flex-row justify-center mt-3 bg-gray-200 dark:bg-zinc-900 mx-5 rounded-xl p-1 mb-2">
-                            <TouchableOpacity
-                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-800 shadow-sm' : ''}`}
-                                onPress={() => setViewMode('grid')}
-                            >
-                                <Ionicons name="apps-outline" size={16} color={viewMode === 'grid' ? (isDark ? 'white' : 'black') : (isDark ? '#A3A3A3' : '#6B7280')} style={{ marginRight: 6 }} />
-                                <Text className={`font-semibold text-sm ${viewMode === 'grid' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>Gallery</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                className={`flex-1 flex-row justify-center items-center py-2 rounded-lg ${viewMode === 'list' ? 'bg-white dark:bg-zinc-800 shadow-sm' : ''}`}
-                                onPress={() => setViewMode('list')}
-                            >
-                                <Ionicons name="reader-outline" size={16} color={viewMode === 'list' ? (isDark ? 'white' : 'black') : (isDark ? '#A3A3A3' : '#6B7280')} style={{ marginRight: 6 }} />
-                                <Text className={`font-semibold text-sm ${viewMode === 'list' ? 'text-black dark:text-white' : 'text-gray-500 dark:text-zinc-400'}`}>Reviews</Text>
-                            </TouchableOpacity>
+                        {/* Visual Underlined Tab Switcher Row */}
+                        <View style={{ borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB', width: '100%', backgroundColor: isDark ? '#0B1326' : '#FFFFFF', marginBottom: 16 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignSelf: 'center' }}>
+                                <TouchableOpacity
+                                    onPress={() => setViewMode('grid')}
+                                    style={{ 
+                                        paddingHorizontal: 24, 
+                                        paddingVertical: 14, 
+                                        borderBottomWidth: 3, 
+                                        borderBottomColor: viewMode === 'grid' ? '#E11D48' : 'transparent',
+                                        marginHorizontal: 12
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={{ 
+                                        fontSize: 12.5, 
+                                        fontWeight: 'bold', 
+                                        letterSpacing: 1.2, 
+                                        color: viewMode === 'grid' ? '#E11D48' : (isDark ? '#FFFFFF' : '#4B5563'),
+                                        fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter'
+                                    }}>
+                                        GALLERY
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity
+                                    onPress={() => setViewMode('list')}
+                                    style={{ 
+                                        paddingHorizontal: 24, 
+                                        paddingVertical: 14, 
+                                        borderBottomWidth: 3, 
+                                        borderBottomColor: viewMode === 'list' ? '#E11D48' : 'transparent',
+                                        marginHorizontal: 12
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={{ 
+                                        fontSize: 12.5, 
+                                        fontWeight: 'bold', 
+                                        letterSpacing: 1.2, 
+                                        color: viewMode === 'list' ? '#E11D48' : (isDark ? '#FFFFFF' : '#4B5563'),
+                                        fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter'
+                                    }}>
+                                        REVIEWS
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
+
                     </View>
                 )}
-                data={getFlatListData()}
+                data={myReviews}
                 keyExtractor={(item) => item.id}
                 renderItem={renderFlatListItem}
-                numColumns={1}
+                numColumns={viewMode === 'grid' ? 3 : 1}
                 ListEmptyComponent={() => (
                     <View className="items-center justify-center px-8 py-10">
                         {/* Elegant Icon in Turquoise */}
@@ -589,14 +692,6 @@ export default function ProfileScreen() {
                                                     >
                                                         @{item.profile.username || 'Guest'}
                                                     </Text>
-                                                    {item.profile.full_name && (
-                                                        <Text 
-                                                            style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.profile.full_name}
-                                                        </Text>
-                                                    )}
                                                 </View>
                                             </TouchableOpacity>
                                         ) : (
@@ -621,14 +716,6 @@ export default function ProfileScreen() {
                                                             </Text>
                                                         </View>
                                                     </View>
-                                                    {item.profile.full_name && (
-                                                        <Text 
-                                                            style={{ fontSize: 12, color: isDark ? '#A1A1AA' : '#6B7280', marginTop: 1 }}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.profile.full_name}
-                                                        </Text>
-                                                    )}
                                                 </View>
                                             </View>
                                         )}

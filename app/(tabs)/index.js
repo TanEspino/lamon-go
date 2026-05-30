@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState, useEffect } from 'react';
-import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, useWindowDimensions, RefreshControl, ActivityIndicator } from 'react-native';
+import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, useWindowDimensions, RefreshControl, ActivityIndicator, Platform } from 'react-native';
 import { useScrollToTop } from '@react-navigation/native';
 import ReviewCard from '../../components/ReviewCard';
 import { useReviews } from '../../context/ReviewsContext';
@@ -71,6 +71,19 @@ export default function FeedScreen() {
     // Automatically scroll to top when the active tab icon is tapped
     useScrollToTop(flatListRef);
 
+    // Scroll to top listener for web browsers when home icon is clicked again
+    useEffect(() => {
+        if (Platform.OS === 'web') {
+            const handleScrollToTop = () => {
+                flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+            };
+            window.addEventListener('scroll-to-top-feed', handleScrollToTop);
+            return () => {
+                window.removeEventListener('scroll-to-top-feed', handleScrollToTop);
+            };
+        }
+    }, []);
+
     const formatReviews = (data, ratingsMap = {}) => {
         return (data || []).map(r => {
             const parsedPhotos = r.image_url ? r.image_url.split(',').map(u => u.trim()).filter(Boolean) : [];
@@ -78,7 +91,7 @@ export default function FeedScreen() {
             return {
                 id: r.id,
                 user_id: r.user_id,
-                username: r.profiles?.username || r.profiles?.full_name || 'Guest',
+                username: r.profiles?.username || 'Guest',
                 avatar_url: r.profiles?.avatar_url || '',
                 restaurant_name: r.restaurant_name,
                 dish_name: r.dish_name,
@@ -221,6 +234,9 @@ export default function FeedScreen() {
         ]);
         setRefreshing(false);
         lastRefreshRef.current = Date.now();
+        if (showToast) {
+            showToast("Feed Refreshed ✨", "Your home feed is now fully up to date!", "success");
+        }
     };
     const handleProfilePress = (authorId) => {
         if (authorId === user?.id) {
@@ -234,27 +250,58 @@ export default function FeedScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+        <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#F5F5F5' }}>
             {/* Custom Logo Header with Refresh Icon */}
-            <View className="flex-row items-center justify-between px-4 bg-gray-100 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60, width: '100%' }}>
-                <View style={{ width: 40 }} />
-                <Image
-                    key={isDark ? 'dark' : 'light'}
-                    source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                    style={{ width: 160, height: 45, alignSelf: 'center' }}
-                    resizeMode="contain"
-                />
-                <TouchableOpacity 
-                    onPress={handleManualRefresh}
-                    className="p-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-850"
-                    disabled={refreshing}
-                >
-                    <Ionicons 
-                        name="refresh" 
-                        size={22} 
-                        color={refreshing ? (isDark ? '#52525B' : '#A1A1AA') : (isDark ? '#F4F4F5' : '#18181B')} 
+            <View 
+                className="bg-gray-100 dark:bg-[#0B1326]" 
+                style={{ 
+                    height: 60, 
+                    width: '100%', 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    position: 'relative', 
+                    zIndex: 10,
+                    backgroundColor: isDark ? '#0B1326' : '#FFFFFF',
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
+                }}
+            >
+                {/* Logo Wrapper */}
+                <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                    <Image
+                        key={isDark ? 'dark' : 'light'}
+                        source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
+                        style={[
+                            { width: 160, height: 45 },
+                            isDark && Platform.OS === 'web' && { 
+                                filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' 
+                            }
+                        ]}
+                        resizeMode="contain"
                     />
-                </TouchableOpacity>
+                </View>
+
+                {/* Left Actions Wrapper - Empty placeholder for consistent centering */}
+                <View style={{ position: 'absolute', left: 16, zIndex: 10 }} />
+
+                {/* Right Actions Wrapper */}
+                <View style={{ position: 'absolute', right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity 
+                        onPress={handleManualRefresh}
+                        className="p-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-850"
+                        disabled={refreshing}
+                    >
+                        {refreshing ? (
+                            <ActivityIndicator size="small" color={isDark ? '#00D2C4' : '#E11D48'} style={{ width: 22, height: 22 }} />
+                        ) : (
+                            <Ionicons 
+                                name="refresh" 
+                                size={22} 
+                                color={isDark ? '#F4F4F5' : '#18181B'} 
+                            />
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
             <FlatList
                 ref={flatListRef}
@@ -323,6 +370,7 @@ export default function FeedScreen() {
                 contentContainerStyle={[
                     posts.length === 0 ? { flexGrow: 1 } : {},
                     { 
+                        paddingTop: 16, // Top breathing room for first card
                         paddingBottom: 100, 
                         width: '100%', 
                         maxWidth: 600, 

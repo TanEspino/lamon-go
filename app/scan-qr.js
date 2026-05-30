@@ -490,14 +490,9 @@ export default function ScanQRScreen() {
                                     source={{ uri: scannedProfile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
                                     className="w-20 h-20 rounded-full border-2 border-turquoise mb-3"
                                 />
-                                <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                <Text className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                                     @{scannedProfile.username || 'Guest'}
                                 </Text>
-                                {scannedProfile.full_name && (
-                                    <Text className="text-sm text-gray-500 dark:text-zinc-400 mb-6">
-                                        {scannedProfile.full_name}
-                                    </Text>
-                                )}
 
                                 <View className="flex-row w-full space-x-3">
                                     <TouchableOpacity

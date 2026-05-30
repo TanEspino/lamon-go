@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useColorScheme } from 'nativewind';
 
 const COMMON_CURRENCIES = [
-    'PHP', 'USD', 'JPY', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'HKD', 'CNY', 'KRW', 'INR', 'IDR', 'MYR', 'THB', 'VND'
+    'PHP', 'USD', 'JPY', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'HKD', 'CNY', 'KRW', 'INR', 'IDR', 'MYR', 'THB', 'VND',
+    'AED', 'BRL', 'CHF', 'MXN', 'NZD', 'SAR', 'TRY', 'TWD', 'ZAR'
 ].sort();
 
 export default function CurrencyPicker({ visible, onClose, onSelect, currentCurrency }) {

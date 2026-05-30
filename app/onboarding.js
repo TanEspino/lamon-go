@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View, Switch } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View, Switch, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import { prepareUploadPayload } from '../utils/uploadHelper';
 import { useAlert } from '../context/AlertContext';
+import { validateUsernameFormat, checkUsernameExists, updateUsername } from '../utils/usernameHelper';
 
 export default function OnboardingScreen() {
     const { updateProfileLocal, profile, user, fetchProfile } = useAuth();
@@ -21,9 +22,30 @@ export default function OnboardingScreen() {
     const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
     const [isSaving, setIsSaving] = useState(false);
     const [focusedField, setFocusedField] = useState(null);
+    const [usernameError, setUsernameError] = useState('');
+    const [usernameChecking, setUsernameChecking] = useState(false);
+    const [usernameAvailable, setUsernameAvailable] = useState(false);
 
     const { colorScheme, setColorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+
+    // Calculate username change cooldown limit (30 days) on mount / render
+    const getCooldownDaysLeft = () => {
+        if (!profile?.last_username_change) return 0;
+        const lastChange = new Date(profile.last_username_change);
+        const now = new Date();
+        const diffMs = now - lastChange;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const cooldownDays = 30;
+        
+        if (diffDays < cooldownDays) {
+            return cooldownDays - diffDays;
+        }
+        return 0;
+    };
+
+    const daysLeft = getCooldownDaysLeft();
+    const isCooldownActive = daysLeft > 0;
 
     const toggleTheme = async () => {
         const nextScheme = isDark ? 'light' : 'dark';
@@ -40,6 +62,65 @@ export default function OnboardingScreen() {
             console.log('Error saving theme preference:', e);
         }
     };
+
+    // Debounced real-time username validation and database availability check
+    useEffect(() => {
+        if (isCooldownActive) {
+            setUsernameError('');
+            setUsernameAvailable(false);
+            setUsernameChecking(false);
+            return;
+        }
+
+        if (!username || !username.trim()) {
+            setUsernameError('');
+            setUsernameAvailable(false);
+            setUsernameChecking(false);
+            return;
+        }
+
+        const formatted = username.trim().toLowerCase();
+
+        // If it is the user's current username, it is available by default
+        if (formatted === profile?.username) {
+            setUsernameError('');
+            setUsernameAvailable(true);
+            setUsernameChecking(false);
+            return;
+        }
+
+        // 1. Instant client-side format validation
+        const formatErr = validateUsernameFormat(formatted);
+        if (formatErr) {
+            setUsernameError(formatErr);
+            setUsernameAvailable(false);
+            setUsernameChecking(false);
+            return;
+        }
+
+        // Format is valid, reset errors and set loading state for database check
+        setUsernameError('');
+        setUsernameChecking(true);
+
+        const debounceTimer = setTimeout(async () => {
+            try {
+                const exists = await checkUsernameExists(formatted);
+                if (exists) {
+                    setUsernameError('Username is already taken 😔');
+                    setUsernameAvailable(false);
+                } else {
+                    setUsernameError('');
+                    setUsernameAvailable(true);
+                }
+            } catch (err) {
+                console.error("Error during debounced availability check:", err);
+            } finally {
+                setUsernameChecking(false);
+            }
+        }, 800);
+
+        return () => clearTimeout(debounceTimer);
+    }, [username, profile?.username]);
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -60,9 +141,18 @@ export default function OnboardingScreen() {
             return;
         }
 
-        const usernameRegex = /^[a-zA-Z0-9._]+$/;
-        if (!usernameRegex.test(username)) {
-            showAlert("Invalid Username", "Username can only contain letters, numbers, periods, and underscores. No spaces allowed.");
+        const formattedUsername = username.trim().toLowerCase();
+
+        // Validate format
+        const formatErr = validateUsernameFormat(formattedUsername);
+        if (formatErr) {
+            showAlert("Invalid Username", formatErr);
+            return;
+        }
+
+        // If validation errors are present in real-time checking, prevent save
+        if (usernameError && formattedUsername !== profile?.username) {
+            showAlert("Validation Error", usernameError);
             return;
         }
 
@@ -113,11 +203,15 @@ export default function OnboardingScreen() {
                 }
             }
 
-            // 3. Update Database `profiles` table
+            // 3. Update Database profiles username and cooldown check first if it changed
+            if (formattedUsername !== profile?.username) {
+                await updateUsername(formattedUsername, user.id);
+            }
+
+            // 4. Update remaining profile fields
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({
-                    username,
                     bio,
                     avatar_url: finalAvatarUrl || 'https://placehold.co/150x150/png?text=User'
                 })
@@ -125,7 +219,7 @@ export default function OnboardingScreen() {
 
             if (updateError) throw updateError;
 
-            // 4. Force Global Context Sync
+            // 5. Force Global Context Sync
             await fetchProfile(user.id);
 
             // Mark onboarding as completed in local storage
@@ -153,15 +247,26 @@ export default function OnboardingScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             {/* Header */}
-            <View className="flex-row justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
+            <View 
+                style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                    backgroundColor: isDark ? '#0B1326' : '#FFFFFF',
+                }}
+            >
                 {router.canGoBack() ? (
-                    <Pressable onPress={() => router.back()} className="w-10">
+                    <Pressable onPress={() => router.back()} style={{ width: 40 }}>
                         <Ionicons name="close-outline" size={28} color={isDark ? "#F3F4F6" : "#262626"} />
                     </Pressable>
                 ) : (
-                    <View className="w-10" />
+                    <View style={{ width: 40 }} />
                 )}
                 <Text className="text-base font-bold text-black dark:text-white">{router.canGoBack() ? 'Edit Profile' : 'Profile Setup'}</Text>
                 <Pressable onPress={handleSave} disabled={isSaving}>
@@ -176,9 +281,20 @@ export default function OnboardingScreen() {
                 keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
                 className="flex-1"
             >
-                <ScrollView className="flex-1 bg-white dark:bg-zinc-900" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled">
+                <ScrollView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }} contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled">
                     {/* Key Visual / Photo Area */}
-                    <View className="w-full bg-gray-50 dark:bg-zinc-950 py-10 items-center justify-center border-b border-gray-100 dark:border-zinc-800 relative">
+                    <View 
+                        style={{
+                            width: '100%',
+                            backgroundColor: isDark ? '#09111E' : '#F9FAFB',
+                            paddingVertical: 40,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderBottomWidth: 1,
+                            borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
+                            position: 'relative',
+                        }}
+                    >
                         <Pressable onPress={pickImage} className="relative">
                             <Image
                                 source={{ uri: avatarUrl || 'https://placehold.co/150x150/png?text=Add+Photo' }}
@@ -195,33 +311,79 @@ export default function OnboardingScreen() {
                     {/* Form Fields - Instagram Style List */}
                     <View className="px-4 py-2">
                         {/* Username */}
-                        <View className={`py-2 border-b ${focusedField === 'username' ? 'border-blue-500' : 'border-gray-100 dark:border-zinc-800'}`}>
+                        <View 
+                            style={{
+                                paddingVertical: 8,
+                                borderBottomWidth: 1,
+                                borderBottomColor: focusedField === 'username' ? '#3B82F6' : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6'),
+                                backgroundColor: isCooldownActive ? (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)') : 'transparent',
+                                borderRadius: isCooldownActive ? 8 : 0,
+                                paddingHorizontal: isCooldownActive ? 8 : 0,
+                            }}
+                        >
                             <View className="flex-row items-center">
                                 <View className="w-8 items-center mr-3">
                                     <Ionicons 
                                         name="person-outline" 
                                         size={24} 
-                                        color={focusedField === 'username' ? '#3B82F6' : (isDark ? '#A3A3A3' : '#262626')} 
+                                        color={isCooldownActive ? (isDark ? '#52525B' : '#A1A1AA') : (focusedField === 'username' ? '#3B82F6' : (isDark ? '#A3A3A3' : '#262626'))} 
                                     />
                                 </View>
                                 <TextInput
                                     value={username}
-                                    onChangeText={(text) => setUsername(text.replace(/[^a-zA-Z0-9._]/g, ''))}
+                                    onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-zA-Z0-9._]/g, ''))}
                                     placeholder="Username..."
                                     placeholderTextColor={isDark ? '#71717A' : '#9CA3AF'}
                                     autoCapitalize="none"
-                                    maxLength={20}
-                                    className="flex-1 text-base text-black dark:text-white py-2"
+                                    maxLength={15}
+                                    editable={!isCooldownActive}
+                                    className={`flex-1 text-base py-2 ${isCooldownActive ? 'text-gray-400 dark:text-zinc-500 font-medium' : 'text-black dark:text-white'}`}
                                     onFocus={() => setFocusedField('username')}
                                     onBlur={() => setFocusedField(null)}
                                     style={{ outlineStyle: 'none' }}
                                 />
                             </View>
-                            <Text className="text-right text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{username.length}/20</Text>
+                            <View className="flex-row justify-between items-center mt-1">
+                                <View className="flex-1">
+                                    {/* Real-time username validation status or Cooldown Indicator */}
+                                    {isCooldownActive ? (
+                                        <View className="flex-row items-center mt-0.5 pl-1 pr-4">
+                                            <Ionicons name="lock-closed" size={13} color={isDark ? "#71717A" : "#8E8E93"} style={{ marginRight: 6 }} />
+                                            <Text className="text-[11px] text-gray-500 dark:text-zinc-400 leading-normal">
+                                                You recently changed your username. You can change it again in <Text className="font-extrabold text-gray-700 dark:text-zinc-200">{daysLeft} day{daysLeft === 1 ? '' : 's'}</Text>.
+                                            </Text>
+                                        </View>
+                                    ) : usernameChecking ? (
+                                        <View className="flex-row items-center mt-0.5 pl-1">
+                                            <ActivityIndicator size="small" color="#3B82F6" style={{ marginRight: 6 }} />
+                                            <Text className="text-[11px] text-blue-500 font-medium">Checking availability...</Text>
+                                        </View>
+                                    ) : usernameError ? (
+                                        <View className="flex-row items-center mt-0.5 pl-1">
+                                            <Ionicons name="close-circle" size={13} color="#EF4444" style={{ marginRight: 6 }} />
+                                            <Text className="text-[11px] text-red-500 font-semibold">{usernameError}</Text>
+                                        </View>
+                                    ) : usernameAvailable && username.trim() !== '' && username.trim().toLowerCase() !== profile?.username ? (
+                                        <View className="flex-row items-center mt-0.5 pl-1">
+                                            <Ionicons name="checkmark-circle" size={13} color="#10B981" style={{ marginRight: 6 }} />
+                                            <Text className="text-[11px] text-emerald-500 font-semibold">Username is available! ✨</Text>
+                                        </View>
+                                    ) : null}
+                                </View>
+                                {!isCooldownActive && (
+                                    <Text className="text-right text-[10px] text-gray-400 dark:text-zinc-500 pl-2">{username.length}/15</Text>
+                                )}
+                            </View>
                         </View>
 
                         {/* Bio */}
-                        <View className={`py-2 border-b ${focusedField === 'bio' ? 'border-blue-500' : 'border-gray-100 dark:border-zinc-800'}`}>
+                        <View 
+                            style={{
+                                paddingVertical: 8,
+                                borderBottomWidth: 1,
+                                borderBottomColor: focusedField === 'bio' ? '#3B82F6' : (isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6'),
+                            }}
+                        >
                             <View className="flex-row items-center">
                                 <View className="w-8 items-center mr-3">
                                     <Ionicons 
@@ -247,7 +409,16 @@ export default function OnboardingScreen() {
                         </View>
 
                         {/* Night Mode Toggle Switch */}
-                        <View className="py-4 border-b border-gray-100 dark:border-zinc-800 flex-row items-center justify-between">
+                        <View 
+                            style={{
+                                paddingVertical: 16,
+                                borderBottomWidth: 1,
+                                borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                            }}
+                        >
                             <View className="flex-row items-center">
                                 <View className="w-8 items-center mr-3">
                                     <Ionicons 
@@ -270,7 +441,14 @@ export default function OnboardingScreen() {
                         </View>
 
                         {/* Legal Links Section */}
-                        <View className="mt-8 border-t border-gray-100 dark:border-zinc-800 pt-5">
+                        <View 
+                            style={{
+                                marginTop: 32,
+                                borderTopWidth: 1,
+                                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
+                                paddingTop: 20,
+                            }}
+                        >
                             <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-1">
                                 Legal & Documents
                             </Text>
