@@ -12,6 +12,18 @@ import { useEffect, useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Ionicons } from '@expo/vector-icons';
+import { 
+  useFonts,
+  Inter_400Regular, 
+  Inter_500Medium, 
+  Inter_600SemiBold, 
+  Inter_700Bold 
+} from '@expo-google-fonts/inter';
+import { 
+  PlayfairDisplay_600SemiBold, 
+  PlayfairDisplay_700Bold 
+} from '@expo-google-fonts/playfair-display';
+
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -37,6 +49,17 @@ export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const [themeLoaded, setThemeLoaded] = useState(false);
 
+  const [fontsLoaded, fontError] = useFonts({
+    'Inter': Inter_400Regular,
+    'Inter-Regular': Inter_400Regular,
+    'Inter-Medium': Inter_500Medium,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+    'Playfair Display': PlayfairDisplay_600SemiBold,
+    'PlayfairDisplay-SemiBold': PlayfairDisplay_600SemiBold,
+    'PlayfairDisplay-Bold': PlayfairDisplay_700Bold,
+  });
+
   useEffect(() => {
     const loadTheme = async () => {
       try {
@@ -60,9 +83,7 @@ export default function RootLayout() {
     loadTheme();
   }, []);
 
-
-
-  if (!themeLoaded) {
+  if (!themeLoaded || (!fontsLoaded && !fontError)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colorScheme === 'dark' ? '#09090b' : '#f9fafb' }}>
         <ActivityIndicator size="large" color="#E11D48" />

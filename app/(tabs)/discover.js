@@ -85,7 +85,8 @@ export default function DiscoverScreen() {
     const lastScrollY = useRef(0);
     const isHeaderCollapsedRef = useRef(false);
 
-    const COLLAPSIBLE_HEIGHT = 64 + (activeProfile && (activeLens === 'me' || activeLens.startsWith('buddy_')) ? 76 : 0) + 60 + 54;
+    const hasProfileHeader = activeProfile && (activeLens === 'me' || activeLens.startsWith('buddy_'));
+    const COLLAPSIBLE_HEIGHT = 64 + (hasProfileHeader ? 112 : 0) + 64 + 54 + 54;
     const listHeaderHeight = COLLAPSIBLE_HEIGHT;
 
     const [scrollX, setScrollX] = useState(0);
@@ -782,25 +783,35 @@ export default function DiscoverScreen() {
         return (
             <TouchableOpacity 
                 onPress={() => handleGridItemPress(item)}
-                style={{ flex: 1/3, aspectRatio: 1, padding: 1 }}
+                style={{ flex: 1/3, aspectRatio: 1, padding: 6 }}
                 activeOpacity={0.85}
             >
                 <Image 
                     source={{ uri: photo }} 
-                    style={{ width: '100%', height: '100%' }} 
+                    style={{ width: '100%', height: '100%', borderRadius: 12 }} 
                     resizeMode="cover"
                 />
                 {item.visibility === 'recommended' && (
                     <View 
-                        className="bg-amber-400 p-0.5 rounded-full shadow-sm"
                         style={{
                             position: 'absolute',
-                            top: 4,
-                            right: 4,
-                            zIndex: 10
+                            top: 10,
+                            right: 10,
+                            backgroundColor: '#00D2C4',
+                            width: 20,
+                            height: 20,
+                            borderRadius: 10,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 1,
+                            elevation: 3,
+                            zIndex: 10,
                         }}
                     >
-                        <Ionicons name="star" size={10} color="black" />
+                        <Ionicons name="star" size={11} color="#0F172A" />
                     </View>
                 )}
             </TouchableOpacity>
@@ -843,30 +854,67 @@ export default function DiscoverScreen() {
     const renderLensButton = (lens) => {
         if (!lens) return null;
         const isActive = activeLens === lens.id;
+
+        // Custom style computation
+        let btnBg = '';
+        let btnBorder = '';
+        let textColor = '';
+        if (isActive) {
+            btnBg = '#00D2C4';
+            btnBorder = '#00D2C4';
+            textColor = '#0F172A';
+        } else {
+            if (isDark) {
+                btnBg = '#151C2E';
+                btnBorder = 'rgba(255, 255, 255, 0.1)';
+                textColor = '#A1A1AA';
+            } else {
+                btnBg = '#F3F4F6';
+                btnBorder = '#E5E7EB';
+                textColor = '#4B5563';
+            }
+        }
+
         return (
             <TouchableOpacity
                 key={lens.id}
                 onPress={() => handleLensPress(lens.id)}
-                className={`flex-row items-center px-4 py-2 mr-2.5 rounded-full border ${isActive ? 'bg-zinc-900 border-zinc-900 dark:bg-zinc-100 dark:border-zinc-100' : 'bg-gray-50 border-gray-200 dark:bg-zinc-900 dark:border-zinc-800'}`}
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    marginRight: 10,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    backgroundColor: btnBg,
+                    borderColor: btnBorder,
+                }}
                 activeOpacity={0.8}
             >
                 {lens.avatar ? (
-                    <Image source={{ uri: lens.avatar }} className="w-4 h-4 rounded-full mr-1.5" />
+                    <Image source={{ uri: lens.avatar }} style={{ width: 16, height: 16, borderRadius: 8, marginRight: 6 }} />
                 ) : lens.icon ? (
-                    lens.iconType === 'ionicons' ? (
-                        <Ionicons name={lens.icon} size={13} color={isActive ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? '#F4F4F5' : '#4B5563')} style={{ marginRight: 6 }} />
-                    ) : (
-                        <MaterialCommunityIcons name={lens.icon} size={14} color={isActive ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? '#F4F4F5' : '#4B5563')} style={{ marginRight: 6 }} />
-                    )
+                    <Ionicons 
+                        name={lens.icon} 
+                        size={14} 
+                        color={textColor} 
+                        style={{ marginRight: 6 }} 
+                    />
                 ) : null}
-                <Text className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-white dark:text-zinc-950' : 'text-gray-600 dark:text-zinc-300'}`}>
+                <Text style={{
+                    fontSize: 12,
+                    fontWeight: '900',
+                    color: textColor,
+                    letterSpacing: 0.5,
+                }}>
                     {lens.label}
                 </Text>
-                {lens.isChowmateButton && selectedChowmate && (
+                {lens.isChowmateButton && (
                     <Ionicons 
                         name="chevron-down" 
                         size={10} 
-                        color={isActive ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? '#A1A1AA' : '#6B7280')} 
+                        color={textColor} 
                         style={{ marginLeft: 4 }}
                     />
                 )}
@@ -874,24 +922,43 @@ export default function DiscoverScreen() {
         );
     };
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#09090b' : '#ffffff' }}>
+        <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#F5F5F5' }}>
             {/* Custom Logo Header - Normal static flow identical to other tabs */}
             <View 
-                className="flex-row items-center justify-center border-b border-gray-200 dark:border-zinc-800" 
+                className="" 
                 style={{ 
                     height: 60, 
                     width: '100%',
-                    backgroundColor: isDark ? '#09090b' : '#f3f4f6',
+                    backgroundColor: isDark ? '#0B1326' : '#f3f4f6',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    position: 'relative',
                     zIndex: 999, 
-                    elevation: 10 
+                    elevation: 10,
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
                 }}
             >
-                <Image
-                    key={isDark ? 'dark' : 'light'}
-                    source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
-                    style={{ width: 160, height: 45, alignSelf: 'center' }}
-                    resizeMode="contain"
-                />
+                {/* Logo Wrapper */}
+                <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                    <Image
+                        key={isDark ? 'dark' : 'light'}
+                        source={isDark ? require('../../assets/logo_profile_dark.png') : require('../../assets/logo_profile.png')}
+                        style={[
+                            { width: 160, height: 45 },
+                            isDark && Platform.OS === 'web' && { 
+                                filter: 'invert(1) hue-rotate(180deg) brightness(1.2)' 
+                            }
+                        ]}
+                        resizeMode="contain"
+                    />
+                </View>
+                
+                {/* Left Actions Wrapper - Empty placeholder for consistent centering */}
+                <View style={{ position: 'absolute', left: 16, zIndex: 10 }} />
+
+                {/* Right Actions Wrapper - Empty placeholder for consistent centering */}
+                <View style={{ position: 'absolute', right: 16, zIndex: 10 }} />
             </View>
 
             {/* Main content parent starts exactly below the Logo Header */}
@@ -906,18 +973,17 @@ export default function DiscoverScreen() {
                         right: 0,
                         zIndex: 500,
                         transform: [{ translateY: headerTranslateY }],
-                        backgroundColor: isDark ? '#09090b' : '#ffffff',
-                        borderBottomWidth: 1,
-                        borderBottomColor: isDark ? '#1f1f23' : '#f1f1f4'
+                        backgroundColor: isDark ? '#0B1326' : '#F5F5F5',
+                        borderBottomWidth: 0,
                     }}
                 >
                     {/* Horizontal Context Switcher (Row 1) */}
-                    <View className="py-3 border-b border-gray-100 dark:border-zinc-900 bg-white dark:bg-zinc-950 relative" style={{ height: 64 }}>
+                    <View style={{ height: 64, backgroundColor: isDark ? '#0B1326' : '#F5F5F5', borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB', position: 'relative', justifyContent: 'center' }}>
                         <ScrollView 
                             ref={switcherScrollViewRef}
                             horizontal 
                             showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingHorizontal: 12, paddingRight: 40 }}
+                            contentContainerStyle={{ paddingHorizontal: 12, paddingRight: 40, alignItems: 'center' }}
                             onScroll={(e) => {
                                 const x = e.nativeEvent.contentOffset.x;
                                 setScrollX(x);
@@ -941,7 +1007,7 @@ export default function DiscoverScreen() {
                                 style={{ 
                                     position: 'absolute',
                                     left: 12,
-                                    top: 11,
+                                    top: 14,
                                     zIndex: 10,
                                     elevation: 4
                                 }}
@@ -965,7 +1031,7 @@ export default function DiscoverScreen() {
                                 style={{ 
                                     position: 'absolute',
                                     right: 12,
-                                    top: 11,
+                                    top: 14,
                                     zIndex: 10,
                                     elevation: 4
                                 }}
@@ -986,60 +1052,98 @@ export default function DiscoverScreen() {
 
                     {/* Collapsible Dynamic Profile Header */}
                     {activeProfile && (activeLens === 'me' || activeLens.startsWith('buddy_')) && (
-                        <View className="flex-row items-center justify-center px-4 border-b border-gray-100 dark:border-zinc-900 bg-gray-50/95 dark:bg-zinc-900/95" style={{ height: 76 }}>
-                            <Image
-                                source={{ uri: activeProfile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80' }}
-                                className="w-10 h-10 rounded-full border-2 border-primary shadow-sm"
-                            />
-                            <View className="mx-3.5 items-center justify-center">
-                                <View className="flex-row items-center gap-1.5 justify-center">
-                                    <Text className="text-sm font-extrabold text-neutral-800 dark:text-white leading-tight text-center" numberOfLines={1}>
-                                        {activeProfile.full_name || `@${activeProfile.username}`}
+                        <View style={{ 
+                            height: 112, 
+                            paddingHorizontal: 16, 
+                            paddingVertical: 8,
+                            backgroundColor: isDark ? '#0B1326' : '#F5F5F5',
+                            justifyContent: 'center',
+                        }}>
+                            <View style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: isDark ? '#151C2E' : '#FFFFFF',
+                                borderRadius: 24,
+                                paddingHorizontal: 16,
+                                borderWidth: isDark ? 0 : 1,
+                                borderColor: '#E5E7EB',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: isDark ? 0 : 0.05,
+                                shadowRadius: 8,
+                                elevation: 3,
+                            }}>
+                                <Image
+                                    source={{ uri: activeProfile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80' }}
+                                    style={{
+                                        width: 64,
+                                        height: 64,
+                                        borderRadius: 32,
+                                        borderWidth: 2,
+                                        borderColor: '#00D2C4',
+                                    }}
+                                />
+                                <View style={{ flex: 1, marginLeft: 16, justifyContent: 'center' }}>
+                                    <Text style={{
+                                        fontSize: 18,
+                                        fontWeight: 'bold',
+                                        color: isDark ? '#FFFFFF' : '#0B1326',
+                                        marginBottom: 4,
+                                    }} numberOfLines={1}>
+                                        @{activeProfile.username || 'guest'}
                                     </Text>
-                                    {/* Chowmate Indicator */}
-                                    <View className="bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-950/50">
-                                        <Text className="text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider">
-                                            {activeLens === 'me' ? 'You' : 'Chowmates'}
-                                        </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        {/* Dishes Stat */}
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 18 }}>
+                                            <Ionicons name="fast-food" size={16} color="#E11D48" />
+                                            <Text style={{
+                                                fontSize: 15,
+                                                fontWeight: 'bold',
+                                                color: isDark ? '#FFFFFF' : '#0B1326',
+                                                marginLeft: 6,
+                                            }}>
+                                                {profileStats.dishes}
+                                            </Text>
+                                        </View>
+                                        {/* Restaurants Stat */}
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Ionicons name="location" size={16} color="#00D2C4" />
+                                            <Text style={{
+                                                fontSize: 15,
+                                                fontWeight: 'bold',
+                                                color: isDark ? '#FFFFFF' : '#0B1326',
+                                                marginLeft: 6,
+                                            }}>
+                                                {profileStats.restaurants}
+                                            </Text>
+                                        </View>
                                     </View>
-                                </View>
-                                {activeProfile.username && activeProfile.full_name && (
-                                    <Text className="text-gray-400 dark:text-zinc-500 text-[10px] font-bold text-center mt-0.5">
-                                        @{activeProfile.username}
-                                    </Text>
-                                )}
-                            </View>
-                            
-                            {/* Premium compact stats badge with icons */}
-                            <View className="flex-row items-center gap-2.5 bg-white dark:bg-zinc-800/80 px-3.5 py-1.5 rounded-xl border border-gray-100 dark:border-zinc-800/80 shadow-sm">
-                                <View className="flex-row items-center gap-1.5">
-                                    <Ionicons name="fast-food-outline" size={20} color="#E11D48" />
-                                    <Text 
-                                        className="text-gray-900 dark:text-white font-black leading-tight"
-                                        style={{ fontSize: 18, fontWeight: '900' }}
-                                    >
-                                        {profileStats.dishes}
-                                    </Text>
-                                </View>
-                                <View className="w-[1px] h-5 bg-gray-200 dark:bg-zinc-700" />
-                                <View className="flex-row items-center gap-1.5">
-                                    <Ionicons name="location-outline" size={20} color="#14B8A6" />
-                                    <Text 
-                                        className="text-gray-900 dark:text-white font-black leading-tight"
-                                        style={{ fontSize: 18, fontWeight: '900' }}
-                                    >
-                                        {profileStats.restaurants}
-                                    </Text>
                                 </View>
                             </View>
                         </View>
                     )}
 
-                    {/* Consolidated Action Bar */}
-                    <View className="px-4 py-2 bg-gray-50 dark:bg-zinc-950 border-b border-gray-100 dark:border-zinc-900 flex-row items-center gap-2 relative" style={{ height: 60, zIndex: 50 }}>
-                        {/* 1. Unified Search Bar with Autocomplete Suggestions */}
-                        <View className="flex-1 flex-row items-center bg-gray-100 dark:bg-zinc-900 rounded-xl px-3 py-1.5 border border-gray-200/50 dark:border-zinc-800/50 relative z-50">
-                            <Ionicons name="search" size={16} color={isSearchFocused ? "#3B82F6" : (isDark ? "#A1A1AA" : "#6B7280")} />
+                    {/* Consolidated Action Row 1: Search Input */}
+                    <View style={{
+                        height: 64,
+                        paddingHorizontal: 16,
+                        justifyContent: 'center',
+                        backgroundColor: isDark ? '#0B1326' : '#F5F5F5',
+                        zIndex: 100,
+                    }}>
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: isDark ? '#09111E' : '#E5E7EB',
+                            borderRadius: 24,
+                            paddingHorizontal: 16,
+                            height: 48,
+                            borderWidth: 1,
+                            borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#D1D5DB',
+                            position: 'relative',
+                        }}>
+                            <Ionicons name="search" size={18} color={isSearchFocused ? "#00D2C4" : (isDark ? "#A1A1AA" : "#6B7280")} />
                             <TextInput
                                 value={searchQuery}
                                 onChangeText={(text) => {
@@ -1056,20 +1160,32 @@ export default function DiscoverScreen() {
                                 }}
                                 placeholder="Search dishes or restaurants..."
                                 placeholderTextColor={isDark ? "#71717A" : "#9CA3AF"}
-                                className="flex-1 ml-2 text-xs text-black dark:text-white"
+                                style={{
+                                    flex: 1,
+                                    marginLeft: 10,
+                                    fontSize: 14,
+                                    color: isDark ? '#FFFFFF' : '#0B1326',
+                                    outlineStyle: 'none',
+                                }}
                                 autoCapitalize="none"
                                 clearButtonMode="while-editing"
-                                style={{ minHeight: 24, paddingVertical: 0, outlineStyle: 'none' }}
                             />
 
                             {/* Intellisense Autocomplete Suggestions */}
                             {showSuggestions && filteredSuggestions.length > 0 && (
                                 <View 
-                                    className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl absolute left-0 right-0 overflow-hidden shadow-xl"
                                     style={{ 
-                                        top: 36, 
-                                        zIndex: 100, 
-                                        elevation: 10, 
+                                        position: 'absolute',
+                                        left: 0,
+                                        right: 0,
+                                        top: 52,
+                                        zIndex: 999, 
+                                        elevation: 10,
+                                        backgroundColor: isDark ? '#151C2E' : '#FFFFFF',
+                                        borderWidth: 1,
+                                        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                                        borderRadius: 16,
+                                        overflow: 'hidden',
                                         shadowColor: '#000', 
                                         shadowOffset: { width: 0, height: 4 }, 
                                         shadowOpacity: 0.1, 
@@ -1080,7 +1196,15 @@ export default function DiscoverScreen() {
                                         {filteredSuggestions.map((item, index) => (
                                             <Pressable 
                                                 key={index} 
-                                                className={`px-4 py-2.5 bg-white dark:bg-zinc-800 flex-row items-center ${index < filteredSuggestions.length - 1 ? 'border-b border-gray-100 dark:border-zinc-700' : ''}`}
+                                                style={({ pressed }) => ({
+                                                    paddingHorizontal: 16,
+                                                    paddingVertical: 12,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    borderBottomWidth: index < filteredSuggestions.length - 1 ? 1 : 0,
+                                                    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
+                                                    backgroundColor: pressed ? (isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6') : 'transparent',
+                                                })}
                                                 onPressIn={() => {
                                                     setSearchQuery(item);
                                                     setShowSuggestions(false);
@@ -1091,41 +1215,57 @@ export default function DiscoverScreen() {
                                                 }}
                                             >
                                                 <Ionicons name="search-outline" size={14} color={isDark ? "#A3A3A3" : "#6B7280"} style={{ marginRight: 8 }} />
-                                                <Text className="text-xs text-gray-800 dark:text-zinc-200 font-semibold flex-1" numberOfLines={1}>{item}</Text>
+                                                <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', fontWeight: '600' }} numberOfLines={1}>{item}</Text>
                                             </Pressable>
                                         ))}
                                     </ScrollView>
                                 </View>
                             )}
                         </View>
+                    </View>
 
-                        {/* 2. Recos Toggle */}
+                    {/* Consolidated Action Row 2: RECOS & FILTER Capsule Buttons */}
+                    <View style={{
+                        height: 54,
+                        paddingHorizontal: 16,
+                        flexDirection: 'row',
+                        gap: 12,
+                        backgroundColor: isDark ? '#0B1326' : '#F5F5F5',
+                        alignItems: 'center',
+                        zIndex: 90,
+                    }}>
                         <TouchableOpacity
                             onPress={handleToggleRecos}
-                            className={`flex-row items-center px-3 py-2 rounded-xl border ${
-                                showRecosOnly 
-                                    ? 'bg-zinc-900 border-zinc-900 dark:bg-zinc-100 dark:border-zinc-100' 
-                                    : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800'
-                            }`}
+                            style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: 36,
+                                borderRadius: 18,
+                                borderWidth: 1.5,
+                                borderColor: showRecosOnly ? '#00D2C4' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#D1D5DB'),
+                                backgroundColor: showRecosOnly ? 'rgba(0, 210, 196, 0.08)' : (isDark ? '#151C2E' : '#FFFFFF'),
+                            }}
                             activeOpacity={0.8}
-                            style={{ width: 85, justifyContent: 'center' }}
                         >
                             <MaterialCommunityIcons 
                                 name="chef-hat" 
                                 size={14} 
-                                color={showRecosOnly ? (isDark ? 'black' : 'white') : (isDark ? '#F4F4F5' : '#4B5563')} 
+                                color={showRecosOnly ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280')} 
                             />
-                            <Text 
-                                className={`text-[11px] font-black uppercase tracking-wider ml-1.5 ${
-                                    showRecosOnly ? 'text-white dark:text-zinc-950' : 'text-gray-600 dark:text-zinc-300'
-                                }`}
-                            >
-                                Recos
+                            <Text style={{
+                                fontSize: 11,
+                                fontWeight: '900',
+                                color: showRecosOnly ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280'),
+                                marginLeft: 6,
+                                letterSpacing: 1,
+                            }}>
+                                RECOS
                             </Text>
                         </TouchableOpacity>
 
-                        {/* 3. Stars Dropdown Button */}
-                        <View className="relative" style={{ zIndex: 60 }}>
+                        <View style={{ flex: 1, position: 'relative' }}>
                             {showStarsDropdown && (
                                 <Pressable 
                                     style={{
@@ -1142,85 +1282,102 @@ export default function DiscoverScreen() {
                             )}
                             <TouchableOpacity
                                 onPress={() => setShowStarsDropdown(!showStarsDropdown)}
-                                className={`flex-row items-center px-3 py-2 rounded-xl border ${
-                                    ratingFilter !== null 
-                                        ? 'bg-zinc-900 border-zinc-900 dark:bg-zinc-100 dark:border-zinc-100' 
-                                        : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800'
-                                }`}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: 36,
+                                    borderRadius: 18,
+                                    borderWidth: 1.5,
+                                    borderColor: ratingFilter !== null ? '#00D2C4' : (isDark ? 'rgba(255, 255, 255, 0.1)' : '#D1D5DB'),
+                                    backgroundColor: ratingFilter !== null ? 'rgba(0, 210, 196, 0.08)' : (isDark ? '#151C2E' : '#FFFFFF'),
+                                    zIndex: 50,
+                                }}
                                 activeOpacity={0.8}
-                                style={{ width: 105, justifyContent: 'center', zIndex: 50 }}
                             >
                                 <Ionicons 
-                                    name="star-outline" 
-                                    size={12} 
-                                    color={ratingFilter !== null ? (isDark ? 'black' : 'white') : (isDark ? '#F4F4F5' : '#4B5563')} 
+                                    name="star" 
+                                    size={13} 
+                                    color={ratingFilter !== null ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280')} 
                                 />
-                                <Text 
-                                    className={`text-[11px] font-black uppercase tracking-wider ml-1.5 ${
-                                        ratingFilter !== null ? 'text-white dark:text-zinc-950' : 'text-gray-600 dark:text-zinc-300'
-                                    }`}
-                                >
-                                    {getRatingButtonText()}
+                                <Text style={{
+                                    fontSize: 11,
+                                    fontWeight: '900',
+                                    color: ratingFilter !== null ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280'),
+                                    marginLeft: 5,
+                                    marginRight: 3,
+                                    letterSpacing: 1,
+                                }}>
+                                    {ratingFilter !== null ? getRatingButtonText() : 'FILTER'}
                                 </Text>
                                 <Ionicons 
                                     name="chevron-down" 
-                                    size={10} 
-                                    color={ratingFilter !== null ? (isDark ? 'black' : 'white') : (isDark ? '#A1A1AA' : '#6B7280')} 
-                                    style={{ marginLeft: 4 }}
+                                    size={9} 
+                                    color={ratingFilter !== null ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280')} 
+                                    style={{ marginLeft: 2 }}
                                 />
                             </TouchableOpacity>
 
                             {/* Stars Dropdown Popover */}
                             {showStarsDropdown && (
                                 <View 
-                                    className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl absolute right-0 top-11 w-36 overflow-hidden shadow-xl z-50"
                                     style={{ 
-                                        elevation: 10,
+                                        position: 'absolute',
+                                        right: 0,
+                                        top: 40,
+                                        width: 140,
+                                        backgroundColor: isDark ? '#151C2E' : '#FFFFFF',
+                                        borderWidth: 1,
+                                        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                                        borderRadius: 16,
+                                        overflow: 'hidden',
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 4 },
                                         shadowOpacity: 0.1,
-                                        shadowRadius: 12
+                                        shadowRadius: 12,
+                                        zIndex: 100,
+                                        elevation: 10,
                                     }}
                                 >
                                     <TouchableOpacity
                                         onPress={() => handleSelectRating(null)}
-                                        className="px-3 py-2.5 border-b border-gray-50 dark:border-zinc-800 flex-row items-center justify-between"
+                                        style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text className="text-xs font-semibold text-gray-700 dark:text-zinc-300">All</Text>
-                                        {ratingFilter === null && <Ionicons name="checkmark" size={12} color="#14B8A6" />}
+                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>All</Text>
+                                        {ratingFilter === null && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => handleSelectRating(5)}
-                                        className="px-3 py-2.5 border-b border-gray-50 dark:border-zinc-800 flex-row items-center justify-between"
+                                        style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text className="text-xs font-semibold text-gray-700 dark:text-zinc-300">5 Stars</Text>
-                                        {ratingFilter === 5 && <Ionicons name="checkmark" size={12} color="#14B8A6" />}
+                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>5 Stars</Text>
+                                        {ratingFilter === 5 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => handleSelectRating(4)}
-                                        className="px-3 py-2.5 border-b border-gray-50 dark:border-zinc-800 flex-row items-center justify-between"
+                                        style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text className="text-xs font-semibold text-gray-700 dark:text-zinc-300">4+ Stars</Text>
-                                        {ratingFilter === 4 && <Ionicons name="checkmark" size={12} color="#14B8A6" />}
+                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>4+ Stars</Text>
+                                        {ratingFilter === 4 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => handleSelectRating(3)}
-                                        className="px-3 py-2.5 border-b border-gray-50 dark:border-zinc-800 flex-row items-center justify-between"
+                                        style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text className="text-xs font-semibold text-gray-700 dark:text-zinc-300">3+ Stars</Text>
-                                        {ratingFilter === 3 && <Ionicons name="checkmark" size={12} color="#14B8A6" />}
+                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>3+ Stars</Text>
+                                        {ratingFilter === 3 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => handleSelectRating(-2)}
-                                        className="px-3 py-2.5 flex-row items-center justify-between"
+                                        style={{ paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text className="text-xs font-semibold text-gray-700 dark:text-zinc-300">2↓ Stars</Text>
-                                        {ratingFilter === -2 && <Ionicons name="checkmark" size={12} color="#14B8A6" />}
+                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>2↓ Stars</Text>
+                                        {ratingFilter === -2 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                 </View>
                             )}
@@ -1228,28 +1385,69 @@ export default function DiscoverScreen() {
                     </View>
 
                     {/* View Mode Toggle Segmented Row */}
-                    <View className="flex-row justify-between items-center px-4 py-2 border-b border-gray-100 dark:border-zinc-900 bg-gray-50 dark:bg-zinc-950" style={{ height: 54 }}>
-                        {activeLens !== 'all' ? (
-                            <Text className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest">
-                                {activeLens === 'saved' ? 'Saved Vault' : activeLens === 'me' ? 'My Vault' : 'Friend Vault'} ({filteredReviews.length})
+                    <View style={{
+                        height: 54,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingHorizontal: 16,
+                        backgroundColor: isDark ? '#0B1326' : '#F5F5F5',
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                    }}>
+                        <Text style={{
+                            fontSize: 18,
+                            fontWeight: 'bold',
+                            color: isDark ? '#FFFFFF' : '#0B1326',
+                        }}>
+                            {activeLens === 'saved' ? 'Saved Menu' : activeLens === 'me' ? 'My Menu' : activeLens === 'all' ? 'Full Menu' : 'Chowmate Menu'}{' '}
+                            <Text style={{ color: isDark ? '#A1A1AA' : '#6B7280', fontWeight: '600', fontSize: 15 }}>
+                                ({filteredReviews.filter(r => !r.isPlaceholder).length})
                             </Text>
-                        ) : (
-                            <View />
-                        )}
-                        <View className="flex-row bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl">
+                        </Text>
+
+                        <View style={{
+                            flexDirection: 'row',
+                            backgroundColor: isDark ? '#151C2E' : '#E5E7EB',
+                            padding: 3,
+                            borderRadius: 20,
+                            alignItems: 'center',
+                        }}>
                             <TouchableOpacity 
                                 onPress={() => setViewMode('grid')}
-                                className={`p-2.5 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: viewMode === 'grid' ? '#00D2C4' : 'transparent',
+                                }}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name="grid" size={18} color={viewMode === 'grid' ? (isDark ? 'white' : 'black') : (isDark ? '#A1A1AA' : '#6B7280')} />
+                                <Ionicons 
+                                    name="grid" 
+                                    size={16} 
+                                    color={viewMode === 'grid' ? '#0F172A' : (isDark ? '#A1A1AA' : '#6B7280')} 
+                                />
                             </TouchableOpacity>
                             <TouchableOpacity 
                                 onPress={() => setViewMode('list')}
-                                className={`p-2.5 rounded-lg ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 shadow-sm' : ''}`}
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: viewMode === 'list' ? '#00D2C4' : 'transparent',
+                                }}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name="list" size={18} color={viewMode === 'list' ? (isDark ? 'white' : 'black') : (isDark ? '#A1A1AA' : '#6B7280')} />
+                                <Ionicons 
+                                    name="list" 
+                                    size={16} 
+                                    color={viewMode === 'list' ? '#0F172A' : (isDark ? '#A1A1AA' : '#6B7280')} 
+                                />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1283,7 +1481,7 @@ export default function DiscoverScreen() {
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
                     ListHeaderComponent={() => (
-                        <View style={{ height: listHeaderHeight }} />
+                        <View style={{ height: listHeaderHeight + 16 }} />
                     )}
                     onScrollToIndexFailed={(info) => {
                         setTimeout(() => {
@@ -1324,7 +1522,7 @@ export default function DiscoverScreen() {
                                 </View>
                                 <Text className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">No Hits Found</Text>
                                 <Text className="text-gray-400 dark:text-zinc-500 text-center text-sm">
-                                    {searchQuery ? `We couldn't find any recommendations for "${searchQuery}" in this vault.` : "No dishes here yet. Time to start building your hitlist."}
+                                    {searchQuery ? `We couldn't find any recommendations for "${searchQuery}" in this menu.` : "No dishes here yet. Time to start building your hitlist."}
                                 </Text>
                             </View>
                         );
@@ -1401,7 +1599,7 @@ export default function DiscoverScreen() {
                         {/* Sticky Search bar header */}
                         <View className="px-5 pb-3 border-b border-gray-100 dark:border-zinc-800">
                             <Text className="text-base font-extrabold text-neutral-800 dark:text-white mb-2.5">
-                                Select Chowmate Vault
+                                Select Chowmate Menu
                             </Text>
                             <View className="flex-row items-center bg-gray-100 dark:bg-zinc-800 px-3.5 py-2.5 rounded-xl">
                                 <Ionicons name="search-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />

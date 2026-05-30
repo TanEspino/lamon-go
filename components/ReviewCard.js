@@ -2,9 +2,11 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image, Text, TouchableOpacity, View, ScrollView, Pressable, useWindowDimensions, StyleSheet, Modal, FlatList, Platform, TextInput, KeyboardAvoidingView, Animated } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { useColorScheme } from 'nativewind';
+import { useColorScheme as useRNColorScheme } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useAlert, CustomAlert } from '../context/AlertContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Module-level global flags to avoid spamming table existence checks across multiple card mounts
 let globalDbChecked = false;
@@ -18,7 +20,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
     const { showAlert } = useAlert();
 
     // Responsive card width computation for immediate correct sizing
-    const fallbackWidth = Math.min(windowWidth, 600) - 32;
+    const fallbackWidth = Math.min(windowWidth, 600);
     const [cardWidth, setCardWidth] = useState(fallbackWidth);
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollViewRef = useRef(null);
@@ -302,10 +304,6 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
     };
 
     const openRateDishSheet = () => {
-        if (review.user_id === user?.id) {
-            showAlert("Action Blocked 🚫", "You cannot contribute a consensus rating to your own post!");
-            return;
-        }
         setShowRateDishSheet(true);
     };
 
@@ -416,106 +414,35 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
     const hasUserRated = consensusReviews.some(r => r.isCurrentUser || r.username === usernameStr);
     const currentUserRating = consensusReviews.find(r => r.isCurrentUser || r.username === usernameStr);
 
+    const containerStyle = isDark ? styles.containerDark : styles.containerLight;
+    const textThemeStyle = isDark ? styles.textDark : styles.textLight;
+    const subtextThemeStyle = isDark ? styles.subtextDark : styles.subtextLight;
+    const ratingBadgeStyle = isRecommended 
+        ? styles.ratingBadgeRecommended 
+        : (isDark ? styles.ratingBadgeNormalDark : styles.ratingBadgeNormalLight);
+    const ratingTextStyle = isRecommended 
+        ? styles.ratingTextRecommended 
+        : (isDark ? styles.ratingTextNormalDark : styles.ratingTextNormalLight);
+    const priceTextStyle = isDark ? styles.priceTextDark : styles.priceTextLight;
+    const bodyTextStyle = isDark ? styles.bodyTextDark : styles.bodyTextLight;
+    const footerStyle = isDark ? styles.footerDark : styles.footerLight;
+    const recommendedBadgeStyle = isDark ? styles.recommendedBadgeDark : styles.recommendedBadgeLight;
+    const recommendedBadgeTextStyle = isDark ? styles.recommendedBadgeTextDark : styles.recommendedBadgeTextLight;
+
     return (
-        <View className="bg-white dark:bg-zinc-900 mb-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
-            {/* Header: User Attribution Row */}
-            <View className="flex-row items-center justify-between px-5 pt-4 pb-3">
-                <TouchableOpacity 
-                    onPress={onProfilePress} 
-                    className="flex-row items-center flex-1"
-                    activeOpacity={0.7}
-                    disabled={!onProfilePress}
-                >
-                    <Image
-                        source={{ uri: avatarUrl }}
-                        className="w-10 h-10 rounded-full mr-3 border border-gray-200 dark:border-zinc-700"
-                    />
-                    <View className="flex-1 pr-2">
-                        <Text className="font-extrabold text-neutral-800 dark:text-zinc-50 text-sm">
-                            @{review.username || 'Guest'}
-                        </Text>
-                        <View className="flex-row items-center flex-wrap gap-1.5 mt-0.5">
-                            <Text className="text-gray-400 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
-                                {dateString}
-                            </Text>
-                            <Text className="text-gray-300 dark:text-zinc-600 text-[10px]">•</Text>
-                            {/* Audience indicator - Minimalist & Premium Icons only */}
-                            {review.visibility === 'private' && (
-                                <Ionicons 
-                                    name="lock-closed" 
-                                    size={11} 
-                                    color={isDark ? "#A3A3A3" : "#6B7280"} 
-                                />
-                            )}
-                            {(review.visibility === 'shared' || !review.visibility) && (
-                                <Ionicons 
-                                    name="people" 
-                                    size={12} 
-                                    color={isDark ? "#A3A3A3" : "#6B7280"} 
-                                />
-                            )}
-                            {review.visibility === 'recommended' && (
-                                <View className="flex-row items-center gap-1 border border-amber-500/50 dark:border-amber-500/40 px-2 py-0.5 rounded-full bg-amber-50/20 dark:bg-amber-950/10">
-                                    <MaterialCommunityIcons 
-                                        name="chef-hat" 
-                                        size={11} 
-                                        color={isDark ? "#F59E0B" : "#D97706"} 
-                                    />
-                                    <Text className="text-amber-600 dark:text-amber-500 text-[9px] font-black uppercase tracking-wider">
-                                        Chowmate Recommended
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Edit & Delete Action Buttons */}
-                <View className="flex-row items-center gap-2">
-                    {onEdit && (
-                        <TouchableOpacity onPress={onEdit} className="p-1.5 bg-gray-50 dark:bg-zinc-800 rounded-full">
-                            <Ionicons name="create-outline" size={16} color={isDark ? "white" : "black"} />
-                        </TouchableOpacity>
-                    )}
-                    {onDelete && (
-                        <TouchableOpacity onPress={onDelete} className="p-1.5 bg-red-50 dark:bg-red-950 rounded-full">
-                            <Ionicons name="trash-outline" size={16} color="red" />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
-
-            {/* Dish & Restaurant Metadata */}
-            <View className="px-5 pb-3">
-                {/* Dish Name */}
-                <View className="flex-row items-center gap-2">
-                    <Ionicons name="restaurant-outline" size={16} color={isDark ? "#A3A3A3" : "#737373"} style={{ marginTop: 2 }} />
-                    <Text className="text-xl font-bold text-neutral-800 dark:text-white capitalize tracking-tight flex-1" style={{ fontFamily: 'serif', lineHeight: 24 }}>
-                        {review.dish_name}
-                    </Text>
-                </View>
-                
-                {/* Restaurant Location */}
-                <TouchableOpacity 
-                    onPress={onRestaurantPress}
-                    disabled={!onRestaurantPress}
-                    className="flex-row items-center mt-1"
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="location-outline" size={13} color={isDark ? "#A3A3A3" : "#6B7280"} />
-                    <Text className="text-gray-500 dark:text-zinc-400 font-bold text-xs pl-1">
-                        {review.restaurant_name}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <View className="px-4">
+        <Pressable 
+            onPress={onPress}
+            style={[styles.container, containerStyle]}
+        >
+            {/* 1. Media Container with Overlaid Premium Header (Unified & Premium Overlay) */}
+            <View style={styles.mediaContainer}>
                 <View 
                     onLayout={handleLayout}
-                    className={`rounded-3xl overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm relative w-full aspect-square ${isRecommended ? 'border-2 border-amber-400 dark:border-amber-500' : ''}`}
+                    className="overflow-hidden bg-gray-100 dark:bg-zinc-800 relative w-full"
+                    style={{ aspectRatio: 4/5, paddingHorizontal: 0, marginHorizontal: 0, paddingLeft: 0, paddingRight: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }}
                 >
                     {photos.length > 0 ? (
-                        <View className="w-full h-full relative">
+                        <View style={{ width: '100%', height: '100%', paddingHorizontal: 0, marginHorizontal: 0, position: 'relative' }}>
                             <ScrollView
                                 ref={scrollViewRef}
                                 horizontal
@@ -527,10 +454,10 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                                 style={{ width: '100%', height: '100%' }}
                             >
                                 {photos.map((uri, index) => (
-                                    <View key={index} style={{ width: cardWidth || 300, height: '100%' }}>
+                                    <View key={index} style={{ width: cardWidth || '100%', height: '100%', paddingHorizontal: 0, marginHorizontal: 0, overflow: 'hidden' }}>
                                         <Image
                                             source={{ uri }}
-                                            className="w-full h-full"
+                                            style={styles.mediaImage}
                                             resizeMode="cover"
                                         />
                                     </View>
@@ -541,10 +468,10 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                             {photos.length > 1 && activeIndex > 0 && (
                                 <Pressable
                                     onPress={() => scrollToImage(activeIndex - 1)}
-                                    className="absolute left-3 top-1/2 -mt-5 bg-zinc-900 rounded-full p-2 items-center justify-center"
+                                    className="absolute left-3 top-1/2 -mt-5 bg-zinc-950/40 rounded-full p-2 items-center justify-center"
                                     style={{ zIndex: 10 }}
                                 >
-                                    <Ionicons name="chevron-back" size={20} color="white" />
+                                    <Ionicons name="chevron-back" size={16} color="white" />
                                 </Pressable>
                             )}
 
@@ -552,21 +479,21 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                             {photos.length > 1 && activeIndex < photos.length - 1 && (
                                 <Pressable
                                     onPress={() => scrollToImage(activeIndex + 1)}
-                                    className="absolute right-3 top-1/2 -mt-5 bg-zinc-900 rounded-full p-2 items-center justify-center"
+                                    className="absolute right-3 top-1/2 -mt-5 bg-zinc-950/40 rounded-full p-2 items-center justify-center"
                                     style={{ zIndex: 10 }}
                                 >
-                                    <Ionicons name="chevron-forward" size={20} color="white" />
+                                    <Ionicons name="chevron-forward" size={16} color="white" />
                                 </Pressable>
                             )}
 
                             {/* Dot Indicators */}
                             {photos.length > 1 && (
-                                <View className="absolute bottom-12 left-0 right-0 flex-row justify-center gap-1.5" style={{ zIndex: 10 }}>
+                                <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-1.5" style={{ zIndex: 10 }}>
                                     {photos.map((_, index) => (
                                         <Pressable
                                             key={index}
                                             onPress={() => scrollToImage(index)}
-                                            className={`h-2 rounded-full ${index === activeIndex ? 'w-4 bg-white' : 'w-2 bg-zinc-400'}`}
+                                            className={`h-1.5 rounded-full ${index === activeIndex ? 'w-3 bg-white' : 'w-1.5 bg-white/50'}`}
                                         />
                                     ))}
                                 </View>
@@ -575,104 +502,229 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                     ) : (
                         <Image
                             source={{ uri: 'https://placehold.co/600x800/png?text=Food' }}
-                            className="w-full h-full"
+                            style={styles.mediaImage}
                             resizeMode="cover"
                         />
                     )}
 
-                    {/* TOP RIGHT ZONE: Bookmarking & Rate Action Overlay Container */}
-                    <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 8, zIndex: 50 }}>
-                        {/* Rate Dish Action Icon - Only on Home Feed & Not for own reviews */}
-                        {feedType === 'home' && review.user_id !== user?.id && (
-                            <TouchableOpacity
-                                onPress={openRateDishSheet}
-                                className="bg-zinc-950/85 p-2 rounded-full shadow-md"
-                                activeOpacity={0.85}
-                                accessibilityLabel="Rate Dish Action"
-                            >
-                                <MaterialCommunityIcons 
-                                    name={hasUserRated ? "star" : "star-plus-outline"} 
-                                    size={18} 
-                                    color={hasUserRated ? "#00D2C4" : "white"} 
+                    {/* Overlaid Premium Frameless Header directly on the Food Image */}
+                    <View style={styles.headerOverlay}>
+                        <LinearGradient
+                            colors={['rgba(0, 0, 0, 0.7)', 'transparent']}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: 100, // Must be tall enough to fade smoothly
+                                borderTopLeftRadius: 24, // Matches the image container rounded top edges
+                                borderTopRightRadius: 24,
+                            }}
+                        />
+                        <TouchableOpacity 
+                            onPress={onProfilePress}
+                            disabled={!onProfilePress || feedType === 'profile'}
+                            style={styles.headerLeft}
+                            activeOpacity={0.7}
+                        >
+                            {feedType !== 'profile' && (
+                                <Image 
+                                    source={{ uri: avatarUrl }} 
+                                    style={styles.overlayAvatar} 
                                 />
-                            </TouchableOpacity>
-                        )}
+                            )}
+                            <View>
+                                {feedType !== 'profile' && (
+                                    <Text style={styles.overlayUsername}>@{review.username || 'Guest'}</Text>
+                                )}
+                                <View style={styles.overlayDateRow}>
+                                    <Text style={styles.overlayDateText}>{dateString}</Text>
+                                    <Text style={styles.overlayDateBullet}> • </Text>
+                                    <Ionicons 
+                                        name="people" 
+                                        size={12} 
+                                        color="#ffffff" 
+                                    />
+                                </View>
+                            </View>
+                        </TouchableOpacity>
 
-                        {/* Floating Save/Bookmark Button */}
-                        {onSavePress && (
-                            <TouchableOpacity
-                                onPress={onSavePress}
-                                className={`p-2 rounded-full shadow-md ${isSaved ? 'bg-amber-400 dark:bg-amber-500' : 'bg-zinc-950/85'}`}
-                                activeOpacity={0.8}
-                                accessibilityLabel="Save Review"
-                            >
-                                <Ionicons 
-                                    name={isSaved ? "bookmark" : "bookmark-outline"} 
-                                    size={18} 
-                                    color={isSaved ? "black" : "white"} 
-                                />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    {/* BOTTOM LEFT ZONE: Ratings and Chowmate Verdict Pills Container */}
-                    <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 8, zIndex: 50 }}>
-                        {/* Poster's Yellow Rating Pill */}
-                        <View className={`px-3 py-1.5 rounded-full flex-row items-center shadow-md ${isRecommended ? 'bg-amber-400 dark:bg-amber-500' : 'bg-zinc-900'}`}>
-                            <Ionicons name="star" size={12} color={isRecommended ? "black" : "white"} style={{ marginRight: 2 }} />
-                            <Text className={`font-extrabold text-xs ${isRecommended ? 'text-zinc-950' : 'text-white'}`}>{review.rating}.0</Text>
-                        </View>
-
-                        {/* Chowmate Verdict Average Ratings Pill - Only shown when there are consensus ratings yet (excludes original poster's rating) */}
-                        {hasConsensus && (
-                            <TouchableOpacity
-                                onPress={openConsensusSheet}
-                                disabled={feedType === 'profile'}
-                                className="px-3 py-1.5 rounded-full flex-row items-center shadow-md"
-                                style={{ backgroundColor: '#00D2C4' }}
-                                activeOpacity={feedType === 'profile' ? 1.0 : 0.8}
-                            >
-                                <Ionicons name="people-outline" size={12} color="white" style={{ marginRight: 3 }} />
-                                <Text className="font-extrabold text-xs text-white">{averageRating}</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    {/* Price Tag */}
-                    {!!review.price && (
-                        <View className="absolute bottom-3 right-3 bg-[#E11D48] px-3 py-1.5 rounded-full shadow-md" style={{ zIndex: 20 }}>
-                            <Text className="font-extrabold text-xs text-white">
-                                {review.currency || 'PHP'} {parseFloat(review.price).toFixed(2)}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-            </View>
- 
-            {/* Content: Caption Notes with Inline Truncation */}
-            {!!review.notes && (
-                <View className="px-5 pt-3">
-                    <View className="border-l-4 border-cyan-400 dark:border-cyan-600 pl-3 py-0.5">
-                        <View style={{ marginTop: 8 }}>
-                            <Text 
-                                ellipsizeMode="tail" 
-                                numberOfLines={isExpanded ? undefined : 2} 
-                                style={[styles.captionText, { color: isDark ? '#e4e4e7' : '#27272a' }]}
-                            >
-                                {review.notes}
-                            </Text>
-                            
-                            {review.notes && review.notes.length > 100 && (
-                                <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)} style={{ marginTop: 4 }}>
-                                    <Text style={{ color: '#888', fontWeight: 'bold' }}>
-                                        {isExpanded ? 'Show less' : 'Read more'}
+                        {/* Right-aligned recommended badge */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            {review.visibility === 'recommended' && (
+                                <View style={[styles.recommendedBadge, recommendedBadgeStyle]}>
+                                    <Text style={[styles.recommendedBadgeText, recommendedBadgeTextStyle]}>
+                                        CHOWMATE RECO
                                     </Text>
-                                </TouchableOpacity>
+                                </View>
                             )}
                         </View>
                     </View>
                 </View>
-            )}
+            </View>
+
+            {/* 2. Anchored details and footer interaction block next to continuous vertical teal bar */}
+            <View style={styles.contentRow}>
+                {/* Continuous Vertical Teal Bar */}
+                <View style={styles.continuousTealBar} />
+
+                {/* Right side text flow: Title, Rating, Location, Price, Body Caption, and Footer Row */}
+                <View style={styles.contentRight}>
+                    <View style={styles.titleRow}>
+                        <Text style={[styles.dishTitle, textThemeStyle]}>
+                            {review.dish_name}
+                        </Text>
+                        
+                        {/* Premium dynamic rating pill badge */}
+                        <View style={[styles.ratingBadge, ratingBadgeStyle]}>
+                            <Ionicons 
+                                name="star" 
+                                size={12} 
+                                color="#FFFFFF" // Solid white star in both modes
+                                style={styles.ratingStarIcon} 
+                            />
+                            <Text style={[styles.ratingText, ratingTextStyle]}>
+                                {review.rating !== undefined ? parseInt(review.rating) : 5}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Location / Price Row */}
+                    <View style={styles.locationPriceRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
+                            <Ionicons 
+                                name="location-outline" 
+                                size={12} 
+                                color={isDark ? '#A1A1AA' : '#71717a'} 
+                                style={styles.locationIcon}
+                            />
+                            <Text style={[styles.locationText, subtextThemeStyle, { flexShrink: 1 }]}>
+                                {review.restaurant_name}
+                            </Text>
+                        </View>
+                        {!!review.price && (
+                            <>
+                                <Text style={[styles.bulletText, subtextThemeStyle, { marginHorizontal: 4 }]}> • </Text>
+                                <Text style={[styles.priceText, priceTextStyle]}>
+                                    {review.currency === 'PHP' || !review.currency ? '₱' : review.currency} {parseFloat(review.price).toFixed(2)}
+                                </Text>
+                            </>
+                        )}
+                    </View>
+
+                    {/* Body Text / Caption (Perfect layout next to vertical teal bar) */}
+                    {!!review.notes && (
+                        <View style={styles.bodyContainer}>
+                            <Text 
+                                numberOfLines={isExpanded ? undefined : 2}
+                                style={[styles.bodyText, bodyTextStyle]}
+                            >
+                                {review.notes}
+                            </Text>
+                            {review.notes && review.notes.length > 100 && (
+                                <TouchableOpacity 
+                                    onPress={() => setIsExpanded(!isExpanded)}
+                                    style={styles.readMoreButton}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.readMoreText}>
+                                        {isExpanded ? 'SHOW LESS' : 'READ MORE'}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
+
+                    {/* 3. Footer Interaction Row (Now perfectly aligned inside the teal bar flow at the bottom) */}
+                    <View style={[styles.footer, footerStyle]}>
+                        <View style={styles.footerLeft}>
+                            {/* Teal circle Rate Dish Button - Only visible on Home Feed & Not for own reviews */}
+                            {feedType === 'home' && review.user_id !== user?.id && (
+                                <TouchableOpacity 
+                                    onPress={openRateDishSheet}
+                                    style={[
+                                        styles.tealCircleBadge, 
+                                        hasUserRated 
+                                            ? { backgroundColor: isDark ? '#061825' : '#E0F7F6' } 
+                                            : { backgroundColor: isDark ? '#31394D' : '#f1f5f9' }
+                                    ]}
+                                    activeOpacity={0.8}
+                                >
+                                    <MaterialCommunityIcons 
+                                        name={hasUserRated ? "star-plus" : "star-plus-outline"} 
+                                        size={21} 
+                                        color={hasUserRated ? "#00D2C4" : (isDark ? "#FFFFFF" : "#71717a")} 
+                                    />
+                                </TouchableOpacity>
+                            )}
+
+                            {/* Modern light turquoise Consensus verdicts list button */}
+                            {hasConsensus && (
+                                <TouchableOpacity 
+                                    onPress={openConsensusSheet}
+                                    style={styles.groupPillBadge} 
+                                    activeOpacity={0.8}
+                                >
+                                    <Ionicons name="people" size={13} color="#00D2C4" style={{ marginRight: 3 }} />
+                                    <Text style={styles.groupPillText}>{averageRating}</Text>
+                                    <Ionicons name="chevron-forward" size={11} color="#00D2C4" style={{ marginLeft: 2 }} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {/* Right-aligned footer actions: Bookmark and relocated Edit/Delete controls */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            {/* bookmark interaction - solid red bookmark banner */}
+                            {onSavePress && (
+                                <TouchableOpacity 
+                                    onPress={onSavePress}
+                                    style={styles.saveButton}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons 
+                                        name={isSaved ? "bookmark" : "bookmark-outline"} 
+                                        size={25} 
+                                        color={isSaved ? '#E11D48' : (isDark ? '#ffffff' : '#000000')} 
+                                    />
+                                </TouchableOpacity>
+                            )}
+
+                            {/* Edit / Delete actions placed next to the bookmark icon with easy tapping layout */}
+                            {(onEdit || onDelete) && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                                    {onEdit && (
+                                        <TouchableOpacity 
+                                            onPress={onEdit} 
+                                            style={{ 
+                                                padding: 8, 
+                                                borderRadius: 20, 
+                                                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                                                marginRight: 8
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Ionicons name="create-outline" size={18} color={isDark ? '#FFFFFF' : '#1C1C1E'} />
+                                        </TouchableOpacity>
+                                    )}
+                                    {onDelete && (
+                                        <TouchableOpacity 
+                                            onPress={onDelete} 
+                                            style={{ 
+                                                padding: 8, 
+                                                borderRadius: 20, 
+                                                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)'
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </View>
 
             {/* Custom App Store-style Chowmate Verdict Bottom Sheet */}
             <ConsensusBottomSheet 
@@ -686,6 +738,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                 getStarPercentage={getStarPercentage}
                 hasUserRated={hasUserRated}
                 onRemoveRating={handleRemoveRating}
+                feedType={feedType}
             />
 
             {/* Premium Rate Dish Scroll-up Form Bottom Sheet */}
@@ -714,7 +767,7 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                     <Text style={toastTextThemeStyle(isDark)}>{toastMessage}</Text>
                 </Animated.View>
             )}
-        </View>
+        </Pressable>
     );
 }
 
@@ -775,9 +828,9 @@ function RateDishBottomSheet({ visible, onClose, isDark, onSubmit, currentRating
                         })
                     }}
                 >
-                    <View style={[styles.sheetContainer, { backgroundColor: isDark ? '#1c1c1e' : '#ffffff', height: 'auto', maxHeight: 520, paddingBottom: Platform.OS === 'ios' ? 40 : 30, width: '100%' }]}>
+                    <View style={[styles.sheetContainer, { backgroundColor: isDark ? '#0B1326' : '#ffffff', height: 'auto', maxHeight: 520, paddingBottom: Platform.OS === 'ios' ? 40 : 30, width: '100%' }]}>
                         {/* Handlebar */}
-                        <View style={[styles.handlebar, { backgroundColor: isDark ? '#3a3a3c' : '#e5e5ea' }]} />
+                        <View style={[styles.handlebar, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#e5e5ea' }]} />
                         
                         {/* Header Row */}
                         <View style={styles.headerRow}>
@@ -811,7 +864,7 @@ function RateDishBottomSheet({ visible, onClose, isDark, onSubmit, currentRating
                         </View>
 
                         {/* Comment Input */}
-                        <View style={[styles.commentInputContainer, { borderColor: isDark ? '#2c2c2e' : '#e5e5ea', backgroundColor: isDark ? '#2c2c2e' : '#f9f9f9' }]}>
+                        <View style={[styles.commentInputContainer, { borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#e5e5ea', backgroundColor: isDark ? '#09111E' : '#f9f9f9' }]}>
                             <TextInput
                                 value={comment}
                                 onChangeText={setComment}
@@ -855,7 +908,8 @@ function ConsensusBottomSheet({
     starCounts, 
     getStarPercentage, 
     hasUserRated, 
-    onRemoveRating 
+    onRemoveRating,
+    feedType
 }) {
 
     const { showAlert } = useAlert();
@@ -905,14 +959,14 @@ function ConsensusBottomSheet({
                     <View style={[
                         styles.sheetContainer, 
                         { 
-                            backgroundColor: isDark ? '#1c1c1e' : '#ffffff', 
+                            backgroundColor: isDark ? '#0B1326' : '#ffffff', 
                             width: '100%',
                             height: sheetMaxHeight,
                             paddingBottom: Platform.OS === 'ios' ? 30 : 20,
                         }
                     ]}>
                         {/* Handlebar */}
-                        <View style={[styles.handlebar, { backgroundColor: isDark ? '#3a3a3c' : '#e5e5ea' }]} />
+                        <View style={[styles.handlebar, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#e5e5ea' }]} />
                         
                         {/* Header Row */}
                         <View style={styles.headerRow}>
@@ -952,35 +1006,35 @@ function ConsensusBottomSheet({
                                             {/* 5 Star Progress Bar */}
                                             <View style={styles.progressBarRow}>
                                                 <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>5 ★</Text>
-                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#09111E' : '#f2f2f7' }]}>
                                                     <View style={[styles.progressFill, { width: getStarPercentage(5) }]} />
                                                 </View>
                                             </View>
                                             {/* 4 Star Progress Bar */}
                                             <View style={styles.progressBarRow}>
                                                 <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>4 ★</Text>
-                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#09111E' : '#f2f2f7' }]}>
                                                     <View style={[styles.progressFill, { width: getStarPercentage(4) }]} />
                                                 </View>
                                             </View>
                                             {/* 3 Star Progress Bar */}
                                             <View style={styles.progressBarRow}>
                                                 <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>3 ★</Text>
-                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#09111E' : '#f2f2f7' }]}>
                                                     <View style={[styles.progressFill, { width: getStarPercentage(3) }]} />
                                                 </View>
                                             </View>
                                             {/* 2 Star Progress Bar */}
                                             <View style={styles.progressBarRow}>
                                                 <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>2 ★</Text>
-                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#09111E' : '#f2f2f7' }]}>
                                                     <View style={[styles.progressFill, { width: getStarPercentage(2) }]} />
                                                 </View>
                                             </View>
                                             {/* 1 Star Progress Bar */}
                                             <View style={styles.progressBarRow}>
                                                 <Text style={[styles.starLabel, { color: isDark ? '#8e8e93' : '#52525b' }]}>1 ★</Text>
-                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2c2c2e' : '#f2f2f7' }]}>
+                                                <View style={[styles.progressTrack, { backgroundColor: isDark ? '#09111E' : '#f2f2f7' }]}>
                                                     <View style={[styles.progressFill, { width: getStarPercentage(1) }]} />
                                                 </View>
                                             </View>
@@ -1001,7 +1055,7 @@ function ConsensusBottomSheet({
                             }
                             data={reviews}
                             keyExtractor={item => item.id}
-                            ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: isDark ? '#2c2c2e' : '#e5e5ea' }]} />}
+                            ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#e5e5ea' }]} />}
                             renderItem={({ item }) => (
                                 <View style={styles.reviewItem}>
                                     <Image source={{ uri: item.avatar }} style={styles.reviewAvatar} />
@@ -1039,10 +1093,10 @@ function ConsensusBottomSheet({
                         />
 
                         {/* Action Area at the Bottom */}
-                        {hasUserRated && (
+                        {hasUserRated && feedType !== 'discover' && (
                             <TouchableOpacity 
                                 onPress={handleRemovePress}
-                                style={[styles.removeButton, { borderTopColor: isDark ? '#2c2c2e' : '#e5e5ea' }]}
+                                style={[styles.removeButton, { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#e5e5ea' }]}
                                 activeOpacity={0.7}
                             >
                                 <Text style={styles.removeButtonText}>Remove My Rating</Text>
@@ -1057,6 +1111,355 @@ function ConsensusBottomSheet({
 }
 
 const styles = StyleSheet.create({
+    container: {
+        marginBottom: 24,
+        borderRadius: 24, // High fidelity rounded corners
+        overflow: 'hidden',
+        alignItems: 'stretch',
+        elevation: 3,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+        marginHorizontal: 16, // Beautiful screen space inset from phone borders
+    },
+    containerLight: {
+        backgroundColor: '#FFFFFF',
+    },
+    containerDark: {
+        backgroundColor: '#151C2E', // Slightly lighter navy for elegant separation without border outline
+    },
+    textLight: {
+        color: '#111827',
+    },
+    textDark: {
+        color: '#FFFFFF', // White text for night mode
+    },
+    subtextLight: {
+        color: '#4B5563',
+    },
+    subtextDark: {
+        color: '#A1A1AA', // Off-white/Light Grey secondary metadata
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    username: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1C1C1E',
+        fontFamily: Platform.OS === 'android' ? 'Inter-SemiBold' : 'Inter',
+    },
+    dateRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    dateText: {
+        fontSize: 12,
+        fontWeight: '400',
+        color: '#8E8E93',
+        fontFamily: Platform.OS === 'android' ? 'Inter-Regular' : 'Inter',
+    },
+    headerPeopleIcon: {
+        marginLeft: 6,
+    },
+    // Frameless Header Overlay styles directly over food photo
+    headerOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 20, // Breathing room at the top
+        paddingBottom: 16, // Cohesive bottom vertical padding
+        borderTopLeftRadius: 24, // Blend perfectly with image container
+        borderTopRightRadius: 24,
+        zIndex: 20,
+    },
+    overlayAvatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        marginRight: 10,
+        borderWidth: 1.5,
+        borderColor: '#ffffff', // Clean white border on photo
+    },
+    overlayUsername: {
+        fontSize: 14,
+        fontWeight: 'bold', // Bold weight to pop out
+        color: '#FFFFFF', // Pure white (#FFFFFF)
+        fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
+        lineHeight: 18, // Extra breathing room line-height
+        textShadowColor: 'rgba(0, 0, 0, 0.8)', // Distinct text shadow for micro-contrast
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+    },
+    overlayDateRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 3,
+    },
+    overlayDateText: {
+        fontSize: 11, // Slightly smaller regular weight
+        fontWeight: 'normal', // Regular weight / normal
+        color: 'rgba(255, 255, 255, 0.85)', // Softer white
+        fontFamily: Platform.OS === 'android' ? 'Inter-Regular' : 'Inter',
+        textShadowColor: 'rgba(0, 0, 0, 0.8)', // Distinct text shadow for micro-contrast
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+    },
+    overlayDateBullet: {
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.85)', // Softer white bullet
+        textShadowColor: 'rgba(0, 0, 0, 0.8)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+    },
+    overlayActionButton: {
+        padding: 6,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Circular dark semi-transparent backdrop for actions
+        borderRadius: 20,
+    },
+    recommendedBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+        backgroundColor: '#FFFFFF', // High-contrast White Background
+    },
+    recommendedBadgeLight: {},
+    recommendedBadgeDark: {},
+    recommendedBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
+        color: '#000000', // Pure Black text inside
+    },
+    recommendedBadgeTextLight: {
+        color: '#000000',
+    },
+    recommendedBadgeTextDark: {
+        color: '#000000',
+    },
+    mediaContainer: {
+        width: '100%',
+        aspectRatio: 4/5,
+        paddingHorizontal: 0,
+        marginHorizontal: 0,
+        paddingLeft: 0,
+        paddingRight: 0,
+        borderTopLeftRadius: 24,  // Round top-left corner to match card
+        borderTopRightRadius: 24, // Round top-right corner to match card
+        overflow: 'hidden',
+    },
+    mediaImage: {
+        width: '100%',
+        height: '100%',
+        alignSelf: 'stretch',
+        borderTopLeftRadius: 24,  // Round top-left corner to match card
+        borderTopRightRadius: 24, // Round top-right corner to match card
+    },
+    contentRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 16, // Beautiful spacing inside card borders
+        paddingTop: 16,
+        paddingBottom: 8,
+    },
+    continuousTealBar: {
+        width: 4,
+        backgroundColor: '#00D2C4',
+        borderRadius: 2.5,
+        marginRight: 12,
+        alignSelf: 'stretch',
+    },
+    contentRight: {
+        flex: 1,
+    },
+    infoBlockContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 8,
+    },
+    infoBlockTealBar: {
+        width: 5,
+        backgroundColor: '#00D2C4',
+        borderRadius: 2.5,
+        marginRight: 12,
+        alignSelf: 'stretch',
+    },
+    infoBlockContent: {
+        flex: 1,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    dishTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display',
+        color: '#1C1C1E',
+        flex: 1,
+        paddingRight: 12,
+        lineHeight: 22,
+    },
+    ratingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    ratingBadgeNormalLight: {
+        backgroundColor: '#F2F2F7',
+    },
+    ratingBadgeNormalDark: {
+        backgroundColor: '#31394D', // Surface Bright lighter navy
+    },
+    ratingBadgeRecommended: {
+        backgroundColor: '#E11D48',
+    },
+    ratingStarIcon: {
+        marginRight: 4,
+    },
+    ratingText: {
+        fontSize: 15,
+        fontWeight: '700',
+        fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
+    },
+    ratingTextNormalLight: {
+        color: '#1C1C1E',
+    },
+    ratingTextNormalDark: {
+        color: '#FFFFFF', // High-contrast white text in night mode
+    },
+    ratingTextRecommended: {
+        color: '#FFFFFF',
+    },
+    locationPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    locationIcon: {
+        marginRight: 4,
+    },
+    locationText: {
+        fontSize: 14,
+        fontWeight: '500',
+        fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter',
+        color: '#666666',
+    },
+    bulletText: {
+        fontSize: 12,
+        color: '#9CA3AF',
+    },
+    priceText: {
+        fontSize: 14,
+        fontWeight: '600',
+        fontFamily: Platform.OS === 'android' ? 'Inter-SemiBold' : 'Inter',
+        color: '#1C1C1E',
+    },
+    priceTextLight: {
+        color: '#111827',
+    },
+    priceTextDark: {
+        color: '#A1A1AA', // Off-white/light grey secondary price metadata
+    },
+    bodyContainer: {
+        marginTop: 8,
+    },
+    bodyText: {
+        fontSize: 15,
+        lineHeight: 24,
+        fontWeight: '400',
+        fontFamily: Platform.OS === 'android' ? 'Inter-Regular' : 'Inter',
+        color: '#333333',
+    },
+    bodyTextLight: {
+        color: '#374151',
+    },
+    bodyTextDark: {
+        color: '#E5E5EA', // Editorial soft off-white text color
+    },
+    readMoreButton: {
+        marginTop: 6,
+        alignSelf: 'flex-start',
+    },
+    readMoreText: {
+        fontSize: 13,
+        color: '#00D2C4',
+        fontWeight: '700',
+        fontFamily: Platform.OS === 'android' ? 'Inter-SemiBold' : 'Inter',
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 0, // Align perfectly with the text above
+        paddingTop: 12,      // Beautiful spacing from description caption
+        paddingBottom: 8,
+    },
+    footerLight: {
+        // completely remove grey border for continuous whitespace flow
+    },
+    footerDark: {
+        // completely remove grey border for continuous whitespace flow
+    },
+    footerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tealCircleBadge: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#00D2C4',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    groupPillBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 210, 196, 0.12)', // Light turquoise background
+        paddingHorizontal: 10,
+        height: 30,
+        borderRadius: 15,
+        marginLeft: 8,
+    },
+    groupPillText: {
+        color: '#00D2C4', // Turquoise text color
+        fontWeight: '850',
+        fontSize: 12.5,
+        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    },
+    saveButton: {
+        padding: 4,
+    },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.4)',

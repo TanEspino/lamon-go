@@ -380,7 +380,7 @@ export default function NotificationsScreen({ isTab = false }) {
     const renderItem = ({ item }) => {
         if (item.isHeader) {
             return (
-                <View className="pt-6 pb-2 border-b border-gray-100 dark:border-zinc-900 mb-2">
+                <View style={{ paddingTop: 24, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', marginBottom: 8 }}>
                     <Text className="text-xs font-black uppercase tracking-wider text-rose-500">
                         {item.title}
                     </Text>
@@ -391,9 +391,9 @@ export default function NotificationsScreen({ isTab = false }) {
         if (item.type === 'pending') {
             const profile = item.requester;
             if (!profile) return null;
-
+ 
             return (
-                <View className="flex-row items-center justify-between py-3 border-b border-gray-50 dark:border-zinc-900/50">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6' }}>
                     <View className="flex-row items-center flex-1 pr-4">
                         <Image
                             source={{ uri: profile.avatar_url || 'https://placehold.co/100x100/png?text=User' }}
@@ -461,7 +461,19 @@ export default function NotificationsScreen({ isTab = false }) {
                             params: { id: item.postId }
                         });
                     }}
-                    className={`flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50 px-3.5 -mx-3.5 ${!isClicked ? 'bg-rose-500/[0.04] dark:bg-rose-500/[0.06] border-l-[4px] border-l-rose-500' : 'bg-transparent border-l-[4px] border-l-transparent'}`}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 14,
+                        paddingHorizontal: 14,
+                        marginHorizontal: -14,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
+                        borderLeftWidth: 4,
+                        borderLeftColor: !isClicked ? '#E11D48' : 'transparent',
+                        backgroundColor: !isClicked ? (isDark ? 'rgba(225, 29, 72, 0.06)' : 'rgba(225, 29, 72, 0.04)') : 'transparent',
+                    }}
                     activeOpacity={0.75}
                 >
                     <View className="flex-row items-center flex-1 pr-2">
@@ -507,7 +519,19 @@ export default function NotificationsScreen({ isTab = false }) {
                             markLocalAsRead(item.id);
                         }
                     }}
-                    className={`flex-row items-center justify-between py-3.5 border-b border-gray-50 dark:border-zinc-900/50 px-3.5 -mx-3.5 ${!isClicked ? 'bg-teal-500/[0.04] dark:bg-teal-500/[0.06] border-l-[4px] border-l-teal-500' : 'bg-transparent border-l-[4px] border-l-transparent'}`}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 14,
+                        paddingHorizontal: 14,
+                        marginHorizontal: -14,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
+                        borderLeftWidth: 4,
+                        borderLeftColor: !isClicked ? '#00D2C4' : 'transparent',
+                        backgroundColor: !isClicked ? (isDark ? 'rgba(0, 210, 196, 0.06)' : 'rgba(0, 210, 196, 0.04)') : 'transparent',
+                    }}
                     activeOpacity={0.75}
                 >
                     <View className="flex-row items-center flex-1 pr-2">
@@ -544,14 +568,18 @@ export default function NotificationsScreen({ isTab = false }) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                 {/* Header */}
                 <View 
-                    className="flex-row items-center px-4 border-b border-gray-200 dark:border-zinc-800" 
                     style={{ 
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: 16,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
                         height: 60,
-                        backgroundColor: isDark ? '#09090b' : '#f3f4f6'
+                        backgroundColor: isDark ? '#0B1326' : '#F3F4F6'
                     }}
                 >
                     {!isTab && (
