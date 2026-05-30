@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, TextInput, View, Switch, ActivityIndicator } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View, Switch, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -16,6 +17,7 @@ import { validateUsernameFormat, checkUsernameExists, updateUsername } from '../
 export default function OnboardingScreen() {
     const { updateProfileLocal, profile, user, fetchProfile } = useAuth();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { showAlert } = useAlert();
     const [username, setUsername] = useState(profile?.username || '');
     const [bio, setBio] = useState(profile?.bio || '');
@@ -46,22 +48,6 @@ export default function OnboardingScreen() {
 
     const daysLeft = getCooldownDaysLeft();
     const isCooldownActive = daysLeft > 0;
-
-    const toggleTheme = async () => {
-        const nextScheme = isDark ? 'light' : 'dark';
-        setColorScheme(nextScheme);
-        try {
-            if (Platform.OS === 'web') {
-                if (typeof window !== 'undefined' && window.localStorage) {
-                    window.localStorage.setItem('theme-preference', nextScheme);
-                }
-            } else {
-                await AsyncStorage.setItem('theme-preference', nextScheme);
-            }
-        } catch (e) {
-            console.log('Error saving theme preference:', e);
-        }
-    };
 
     // Debounced real-time username validation and database availability check
     useEffect(() => {
@@ -247,7 +233,7 @@ export default function OnboardingScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
+        <View style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             {/* Header */}
             <View 
                 style={{
@@ -255,7 +241,8 @@ export default function OnboardingScreen() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     paddingHorizontal: 16,
-                    paddingVertical: 12,
+                    height: 56 + insets.top,
+                    paddingTop: insets.top,
                     borderBottomWidth: 1,
                     borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
                     backgroundColor: isDark ? '#0B1326' : '#FFFFFF',
@@ -408,78 +395,9 @@ export default function OnboardingScreen() {
                             <Text className="text-right text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{bio.length}/80</Text>
                         </View>
 
-                        {/* Night Mode Toggle Switch */}
-                        <View 
-                            style={{
-                                paddingVertical: 16,
-                                borderBottomWidth: 1,
-                                borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}
-                        >
-                            <View className="flex-row items-center">
-                                <View className="w-8 items-center mr-3">
-                                    <Ionicons 
-                                        name={isDark ? "moon" : "moon-outline"} 
-                                        size={24} 
-                                        color={isDark ? "#FBBF24" : "#262626"} 
-                                    />
-                                </View>
-                                <View>
-                                    <Text className="text-base font-semibold text-black dark:text-white">Night Mode</Text>
-                                    <Text className="text-xs text-gray-400 dark:text-zinc-400">Embrace the dark side</Text>
-                                </View>
-                            </View>
-                            <Switch
-                                value={isDark}
-                                onValueChange={toggleTheme}
-                                trackColor={{ false: '#D1D5DB', true: '#E11D48' }}
-                                thumbColor={isDark ? '#FFFFFF' : '#F3F4F6'}
-                            />
-                        </View>
-
-                        {/* Legal Links Section */}
-                        <View 
-                            style={{
-                                marginTop: 32,
-                                borderTopWidth: 1,
-                                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
-                                paddingTop: 20,
-                            }}
-                        >
-                            <Text className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-1">
-                                Legal & Documents
-                            </Text>
-                            
-                            {/* Terms of Service Link */}
-                            <Pressable 
-                                onPress={() => router.push('/terms-of-service')}
-                                className="py-3.5 border-b border-gray-100 dark:border-zinc-800 flex-row items-center justify-between px-1"
-                            >
-                                <View className="flex-row items-center">
-                                    <Ionicons name="document-text-outline" size={20} color={isDark ? "#A3A3A3" : "#262626"} style={{ marginRight: 12 }} />
-                                    <Text className="text-base font-semibold text-black dark:text-white">Terms of Service</Text>
-                                </View>
-                                <Ionicons name="chevron-forward" size={16} color={isDark ? "#71717A" : "#9CA3AF"} />
-                            </Pressable>
-
-                            {/* Privacy Policy Link */}
-                            <Pressable 
-                                onPress={() => router.push('/privacy-policy')}
-                                className="py-3.5 border-b border-gray-100 dark:border-zinc-800 flex-row items-center justify-between px-1"
-                            >
-                                <View className="flex-row items-center">
-                                    <Ionicons name="shield-checkmark-outline" size={20} color={isDark ? "#A3A3A3" : "#262626"} style={{ marginRight: 12 }} />
-                                    <Text className="text-base font-semibold text-black dark:text-white">Privacy Policy</Text>
-                                </View>
-                                <Ionicons name="chevron-forward" size={16} color={isDark ? "#71717A" : "#9CA3AF"} />
-                            </Pressable>
-                        </View>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     );
 }

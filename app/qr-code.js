@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, View, StyleSheet, Animated, Image, Platform, ActivityIndicator } from 'react-native';
+import { Text, TouchableOpacity, View, StyleSheet, Animated, Image, Platform, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -18,6 +19,8 @@ import { useAlert, CustomAlert } from '../context/AlertContext';
 
 export default function UnifiedQRCodeScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? 0 : insets.top;
     const { profile, user, fetchBuddyStats, showToast } = useAuth();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -361,7 +364,8 @@ export default function UnifiedQRCodeScreen() {
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        height: 60,
+        height: 60 + topInset,
+        paddingTop: topInset,
         backgroundColor: isDark ? '#09090B' : '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: isDark ? '#27272A' : '#E5E7EB'
@@ -454,7 +458,7 @@ export default function UnifiedQRCodeScreen() {
     }
 
     return (
-        <SafeAreaView style={screenStyle}>
+        <View style={screenStyle}>
             <StatusBar style={isDark ? 'light' : 'dark'} />
             <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                 
@@ -1013,6 +1017,6 @@ export default function UnifiedQRCodeScreen() {
                 )}
             </Animated.View>
             <CustomAlert />
-        </SafeAreaView>
+        </View>
     );
 }

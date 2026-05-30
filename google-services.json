@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1049072196202",
+    "project_id": "lamongo-34e02",
+    "storage_bucket": "lamongo-34e02.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1049072196202:android:ab41dddc426059a5c10813",
+        "android_client_info": {
+          "package_name": "com.tyspino.foodtracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPLuNqZWMnj4FvcAm7TT5kJdwWkTDBsnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

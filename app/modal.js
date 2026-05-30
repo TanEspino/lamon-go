@@ -163,8 +163,43 @@ export default function ModalScreen() {
             setCurrency(params.currency || 'PHP');
             setVisibility(params.visibility || 'shared');
             setDateOrdered(params.date_ordered ? new Date(params.date_ordered) : new Date());
+        } else {
+            // Reset all state fields for a new post
+            setRestaurantName('');
+            setDish('');
+            setRating(0);
+            setNotes('');
+            setPhotos([]);
+            setPrice('');
+            setVisibility('shared');
+            setDateOrdered(new Date());
+            setStep(1); // Ensure uploader starts at step 1 (upload photo)
         }
-    }, [params.id]);
+    }, [isEditing, params.id]);
+
+    useEffect(() => {
+        if (!isEditing) {
+            const loadDefaultCurrency = async () => {
+                try {
+                    let savedCurrency = null;
+                    if (Platform.OS === 'web') {
+                        savedCurrency = window.localStorage.getItem('default-currency');
+                    } else {
+                        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                        savedCurrency = await AsyncStorage.getItem('default-currency');
+                    }
+                    if (savedCurrency) {
+                        setCurrency(savedCurrency);
+                    } else {
+                        setCurrency('PHP');
+                    }
+                } catch (e) {
+                    console.log('Error loading default currency in modal:', e);
+                }
+            };
+            loadDefaultCurrency();
+        }
+    }, [isEditing]);
 
     const takePhoto = async (index = null) => {
         try {

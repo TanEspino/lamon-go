@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 16,
         paddingTop: 16,
-        paddingBottom: 8,
+        paddingBottom: 4,
     },
     infoBlockTealBar: {
         width: 3.5,
@@ -333,7 +333,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingLeft: 31.5, // matches indentation with title/location text content due to teal bar
+        paddingRight: 16,
         paddingVertical: 12,
     },
     footerLeft: {

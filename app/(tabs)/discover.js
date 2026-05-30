@@ -1,7 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { FlatList, SafeAreaView, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, Animated, Pressable, LayoutAnimation, Platform, UIManager, Easing } from 'react-native';
+import { FlatList, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator, TextInput, Animated, Pressable, LayoutAnimation, Platform, UIManager, Easing } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ReviewCard from '../../components/ReviewCard';
 import { useAuth } from '../../context/AuthContext';
 import { useReviews } from '../../context/ReviewsContext';
@@ -15,6 +16,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function DiscoverScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { reviews, savedReviewIds, toggleSaveReview } = useReviews();
     const { user, profile: myProfile, activeDiscoverUser, setActiveDiscoverUser, showToast } = useAuth();
 
@@ -255,7 +257,7 @@ export default function DiscoverScreen() {
             // Fetch complete buddies profiles
             const { data: profiles, error: pErr } = await supabase
                 .from('profiles')
-                .select('id, username, avatar_url, full_name')
+                .select('id, username, avatar_url, full_name, bio')
                 .in('id', buddyIds);
             
             if (!pErr && profiles) {
@@ -904,7 +906,8 @@ export default function DiscoverScreen() {
                 ) : null}
                 <Text style={{
                     fontSize: 12,
-                    fontWeight: '900',
+                    fontWeight: 'bold',
+                    fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
                     color: textColor,
                     letterSpacing: 0.5,
                 }}>
@@ -922,12 +925,13 @@ export default function DiscoverScreen() {
         );
     };
     return (
-        <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#F5F5F5' }}>
+        <View className="flex-1 bg-neutral-50 dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#F5F5F5' }}>
             {/* Custom Logo Header - Normal static flow identical to other tabs */}
             <View 
                 className="" 
                 style={{ 
-                    height: 60, 
+                    height: 60 + insets.top, 
+                    paddingTop: insets.top,
                     width: '100%',
                     backgroundColor: isDark ? '#0B1326' : '#f3f4f6',
                     flexDirection: 'row',
@@ -955,10 +959,10 @@ export default function DiscoverScreen() {
                 </View>
                 
                 {/* Left Actions Wrapper - Empty placeholder for consistent centering */}
-                <View style={{ position: 'absolute', left: 16, zIndex: 10 }} />
+                <View style={{ position: 'absolute', left: 16, top: insets.top, bottom: 0, justifyContent: 'center', zIndex: 10 }} />
 
                 {/* Right Actions Wrapper - Empty placeholder for consistent centering */}
-                <View style={{ position: 'absolute', right: 16, zIndex: 10 }} />
+                <View style={{ position: 'absolute', right: 16, top: insets.top, bottom: 0, justifyContent: 'center', zIndex: 10 }} />
             </View>
 
             {/* Main content parent starts exactly below the Logo Header */}
@@ -1074,51 +1078,81 @@ export default function DiscoverScreen() {
                                 shadowRadius: 8,
                                 elevation: 3,
                             }}>
-                                <Image
-                                    source={{ uri: activeProfile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80' }}
-                                    style={{
-                                        width: 64,
-                                        height: 64,
-                                        borderRadius: 32,
-                                        borderWidth: 2,
-                                        borderColor: '#00D2C4',
-                                    }}
-                                />
-                                <View style={{ flex: 1, marginLeft: 16, justifyContent: 'center' }}>
-                                    <Text style={{
-                                        fontSize: 18,
-                                        fontWeight: 'bold',
-                                        color: isDark ? '#FFFFFF' : '#0B1326',
-                                        marginBottom: 4,
-                                    }} numberOfLines={1}>
-                                        @{activeProfile.username || 'guest'}
-                                    </Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        {/* Dishes Stat */}
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 18 }}>
-                                            <Ionicons name="fast-food" size={16} color="#E11D48" />
-                                            <Text style={{
-                                                fontSize: 15,
-                                                fontWeight: 'bold',
-                                                color: isDark ? '#FFFFFF' : '#0B1326',
-                                                marginLeft: 6,
-                                            }}>
-                                                {profileStats.dishes}
-                                            </Text>
-                                        </View>
-                                        {/* Restaurants Stat */}
+                                {/* Left Side cluster (Avatar, @username, Stats) */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1.3 }}>
+                                    <Image
+                                        source={{ uri: activeProfile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80' }}
+                                        style={{
+                                            width: 52,
+                                            height: 52,
+                                            borderRadius: 26,
+                                            borderWidth: 2,
+                                            borderColor: '#00D2C4',
+                                        }}
+                                    />
+                                    <View style={{ flex: 1, marginLeft: 12, justifyContent: 'center' }}>
+                                        <Text style={{
+                                            fontSize: 16,
+                                            fontWeight: 'bold',
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
+                                            color: isDark ? '#FFFFFF' : '#0B1326',
+                                            marginBottom: 2,
+                                        }} numberOfLines={1}>
+                                            @{activeProfile.username || 'guest'}
+                                        </Text>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Ionicons name="location" size={16} color="#00D2C4" />
-                                            <Text style={{
-                                                fontSize: 15,
-                                                fontWeight: 'bold',
-                                                color: isDark ? '#FFFFFF' : '#0B1326',
-                                                marginLeft: 6,
-                                            }}>
-                                                {profileStats.restaurants}
-                                            </Text>
+                                            {/* Dishes Stat */}
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                                                <Ionicons name="fast-food" size={14} color="#E11D48" />
+                                                <Text style={{
+                                                    fontSize: 13,
+                                                    fontWeight: '500',
+                                                    fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter',
+                                                    color: isDark ? '#FFFFFF' : '#0B1326',
+                                                    marginLeft: 4,
+                                                }}>
+                                                    {profileStats.dishes}
+                                                </Text>
+                                            </View>
+                                            {/* Restaurants Stat */}
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Ionicons name="location" size={14} color="#00D2C4" />
+                                                <Text style={{
+                                                    fontSize: 13,
+                                                    fontWeight: '500',
+                                                    fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter',
+                                                    color: isDark ? '#FFFFFF' : '#0B1326',
+                                                    marginLeft: 4,
+                                                }}>
+                                                    {profileStats.restaurants}
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
+                                </View>
+
+                                {/* Right Side cluster (User Bio / Fallback Placeholder) */}
+                                <View style={{ 
+                                    flex: 1, 
+                                    marginLeft: 16, 
+                                    borderLeftWidth: 1, 
+                                    borderLeftColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB', 
+                                    paddingLeft: 12, 
+                                    justifyContent: 'center',
+                                    height: '70%',
+                                }}>
+                                    <Text 
+                                        numberOfLines={3} 
+                                        style={{
+                                            fontSize: 11.5,
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter',
+                                            color: activeProfile.bio ? (isDark ? '#A1A1AA' : '#6B7280') : (isDark ? '#4B5563' : '#9CA3AF'),
+                                            fontStyle: activeProfile.bio ? 'italic' : 'normal',
+                                            lineHeight: 15,
+                                        }}
+                                    >
+                                        {activeProfile.bio ? activeProfile.bio.trim() : "Add a short bio to tell Chowmates about your favorite eats!"}
+                                    </Text>
                                 </View>
                             </View>
                         </View>
@@ -1164,6 +1198,7 @@ export default function DiscoverScreen() {
                                     flex: 1,
                                     marginLeft: 10,
                                     fontSize: 14,
+                                    fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter',
                                     color: isDark ? '#FFFFFF' : '#0B1326',
                                     outlineStyle: 'none',
                                 }}
@@ -1215,7 +1250,7 @@ export default function DiscoverScreen() {
                                                 }}
                                             >
                                                 <Ionicons name="search-outline" size={14} color={isDark ? "#A3A3A3" : "#6B7280"} style={{ marginRight: 8 }} />
-                                                <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', fontWeight: '600' }} numberOfLines={1}>{item}</Text>
+                                                <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', fontWeight: '600', fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter' }} numberOfLines={1}>{item}</Text>
                                             </Pressable>
                                         ))}
                                     </ScrollView>
@@ -1256,7 +1291,8 @@ export default function DiscoverScreen() {
                             />
                             <Text style={{
                                 fontSize: 11,
-                                fontWeight: '900',
+                                fontWeight: 'bold',
+                                fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
                                 color: showRecosOnly ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280'),
                                 marginLeft: 6,
                                 letterSpacing: 1,
@@ -1302,7 +1338,8 @@ export default function DiscoverScreen() {
                                 />
                                 <Text style={{
                                     fontSize: 11,
-                                    fontWeight: '900',
+                                    fontWeight: 'bold',
+                                    fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
                                     color: ratingFilter !== null ? '#00D2C4' : (isDark ? '#A1A1AA' : '#6B7280'),
                                     marginLeft: 5,
                                     marginRight: 3,
@@ -1344,7 +1381,7 @@ export default function DiscoverScreen() {
                                         style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>All</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>All</Text>
                                         {ratingFilter === null && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
@@ -1352,7 +1389,7 @@ export default function DiscoverScreen() {
                                         style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>5 Stars</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>5 Stars</Text>
                                         {ratingFilter === 5 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
@@ -1360,7 +1397,7 @@ export default function DiscoverScreen() {
                                         style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>4+ Stars</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>4+ Stars</Text>
                                         {ratingFilter === 4 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
@@ -1368,7 +1405,7 @@ export default function DiscoverScreen() {
                                         style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>3+ Stars</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>3+ Stars</Text>
                                         {ratingFilter === 3 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                     <TouchableOpacity
@@ -1376,7 +1413,7 @@ export default function DiscoverScreen() {
                                         style={{ paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>2↓ Stars</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', color: isDark ? '#FFFFFF' : '#0B1326', flex: 1 }}>2↓ Stars</Text>
                                         {ratingFilter === -2 && <Ionicons name="checkmark" size={14} color="#00D2C4" />}
                                     </TouchableOpacity>
                                 </View>
@@ -1398,10 +1435,16 @@ export default function DiscoverScreen() {
                         <Text style={{
                             fontSize: 18,
                             fontWeight: 'bold',
+                            fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter',
                             color: isDark ? '#FFFFFF' : '#0B1326',
                         }}>
                             {activeLens === 'saved' ? 'Saved Menu' : activeLens === 'me' ? 'My Menu' : activeLens === 'all' ? 'Full Menu' : 'Chowmate Menu'}{' '}
-                            <Text style={{ color: isDark ? '#A1A1AA' : '#6B7280', fontWeight: '600', fontSize: 15 }}>
+                            <Text style={{ 
+                                color: isDark ? '#A1A1AA' : '#6B7280', 
+                                fontWeight: '500', 
+                                fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter',
+                                fontSize: 15 
+                            }}>
                                 ({filteredReviews.filter(r => !r.isPlaceholder).length})
                             </Text>
                         </Text>
@@ -1508,8 +1551,8 @@ export default function DiscoverScreen() {
                                     <View className="bg-rose-50 dark:bg-rose-950/30 p-6 rounded-full mb-4">
                                         <Ionicons name="restaurant-outline" size={48} color="#E11D48" />
                                     </View>
-                                    <Text className="text-xl font-black text-gray-900 dark:text-white mb-2 text-center">What are you craving?</Text>
-                                    <Text className="text-gray-500 dark:text-zinc-400 text-center text-sm max-w-xs leading-relaxed">
+                                    <Text className="text-xl font-black text-gray-900 dark:text-white mb-2 text-center" style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter' }}>What are you craving?</Text>
+                                    <Text className="text-gray-500 dark:text-zinc-400 text-center text-sm max-w-xs leading-relaxed" style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter' }}>
                                         The whole community's food diary is at your fingertips. Search or filter to start exploring!
                                     </Text>
                                 </View>
@@ -1520,8 +1563,8 @@ export default function DiscoverScreen() {
                                 <View className="bg-gray-50 dark:bg-zinc-800 p-6 rounded-full mb-4">
                                     <Ionicons name="search-outline" size={48} color={isDark ? '#71717A' : '#9CA3AF'} />
                                 </View>
-                                <Text className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">No Hits Found</Text>
-                                <Text className="text-gray-400 dark:text-zinc-500 text-center text-sm">
+                                <Text className="text-lg font-extrabold text-gray-900 dark:text-white mb-2" style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter' }}>No Hits Found</Text>
+                                <Text className="text-gray-400 dark:text-zinc-500 text-center text-sm" style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter' }}>
                                     {searchQuery ? `We couldn't find any recommendations for "${searchQuery}" in this menu.` : "No dishes here yet. Time to start building your hitlist."}
                                 </Text>
                             </View>
@@ -1654,6 +1697,6 @@ export default function DiscoverScreen() {
                     </Animated.View>
                 </View>
             )}
-        </SafeAreaView>
+        </View>
     );
 }

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Dimensions, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, Platform, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
+import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, Platform, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useReviews } from '../../context/ReviewsContext';
 import ReviewCard from '../../components/ReviewCard';
@@ -11,6 +12,7 @@ import { useAlert } from '../../context/AlertContext';
 
 export default function ProfileScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { reviews, deleteReview } = useReviews();
     const { profile, user, signOut, pendingCount, buddyCount, fetchBuddyStats, unseenAcceptanceCount, unseenRecommendationsCount, setActiveDiscoverUser } = useAuth();
     const { showAlert } = useAlert();
@@ -268,7 +270,7 @@ export default function ProfileScreen() {
     if (!profile) return null; // Or loading spinner
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
+        <View className="flex-1 bg-white dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <View 
                 onLayout={handleLayout}
                 style={{ flex: 1, width: '100%', maxWidth: maxAppWidth, alignSelf: 'center', position: 'relative' }}
@@ -277,7 +279,8 @@ export default function ProfileScreen() {
                 <View 
                     className="bg-gray-100 dark:bg-[#0B1326]" 
                     style={{ 
-                        height: 60, 
+                        height: 60 + insets.top, 
+                        paddingTop: insets.top,
                         width: '100%', 
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -304,7 +307,7 @@ export default function ProfileScreen() {
                     </View>
 
                     {/* Left Actions Wrapper */}
-                    <View style={{ position: 'absolute', left: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ position: 'absolute', left: 16, top: insets.top, bottom: 0, justifyContent: 'center', zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity 
                             onPress={() => router.push('/qr-code')}
                             activeOpacity={0.7}
@@ -315,13 +318,13 @@ export default function ProfileScreen() {
                     </View>
 
                     {/* Right Actions Wrapper */}
-                    <View style={{ position: 'absolute', right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ position: 'absolute', right: 16, top: insets.top, bottom: 0, justifyContent: 'center', zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity 
-                            onPress={signOut}
+                            onPress={() => router.push('/settings')}
                             activeOpacity={0.7}
-                            accessibilityLabel="Log Out"
+                            accessibilityLabel="Settings"
                         >
-                            <Ionicons name="log-out-outline" size={26} color={isDark ? 'white' : 'black'} />
+                            <Ionicons name="settings-outline" size={26} color={isDark ? 'white' : 'black'} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -332,56 +335,62 @@ export default function ProfileScreen() {
                 ListHeaderComponent={() => (
                     <View style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
                         {/* Top Section: Dashboard Header Details */}
-                        <View style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF', paddingTop: 20, paddingBottom: 12 }}>
-                            {/* Centered Identity Row */}
-                            <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 12 }}>
-                                {/* Centered Large Avatar Container */}
-                                <View style={{
-                                    width: 128,
-                                    height: 128,
-                                    borderRadius: 64,
-                                    borderWidth: 2,
-                                    borderColor: '#00D2C4',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: 2,
-                                    backgroundColor: 'transparent',
-                                    shadowColor: '#00D2C4',
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: isDark ? 0.35 : 0.15,
-                                    shadowRadius: 10,
-                                    elevation: 5
-                                }}>
-                                    <Image
-                                        source={{ uri: profile.avatar_url || 'https://placehold.co/120x120/png?text=User' }}
-                                        style={{ width: 116, height: 116, borderRadius: 58 }}
-                                    />
-                                </View>
+                        <View style={{ 
+                            backgroundColor: isDark ? '#0B1326' : '#FFFFFF', 
+                            paddingHorizontal: 16,
+                            paddingTop: 12, 
+                            paddingBottom: 12,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            width: '100%'
+                        }}>
+                            {/* Left Aligned Avatar Container with Solid Right Margin */}
+                            <View style={{
+                                width: 84,
+                                height: 84,
+                                borderRadius: 42,
+                                borderWidth: 2,
+                                borderColor: '#00D2C4',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 2,
+                                backgroundColor: 'transparent',
+                                shadowColor: '#00D2C4',
+                                shadowOffset: { width: 0, height: 3 },
+                                shadowOpacity: isDark ? 0.3 : 0.1,
+                                shadowRadius: 6,
+                                elevation: 4,
+                                marginRight: 16
+                            }}>
+                                <Image
+                                    source={{ uri: profile.avatar_url || 'https://placehold.co/120x120/png?text=User' }}
+                                    style={{ width: 76, height: 76, borderRadius: 38 }}
+                                />
+                            </View>
 
-                                {/* Centered Username styled in Inter fontFamily from ReviewCard */}
+                            {/* Flexible Vertical Stack on the Right */}
+                            <View style={{ flex: 1, flexDirection: 'column' }}>
+                                {/* Row 1: Username Only */}
                                 <Text 
                                     style={{ 
                                         fontFamily: Platform.OS === 'android' ? 'Inter-SemiBold' : 'Inter', 
-                                        fontSize: 32, 
+                                        fontSize: 20, 
                                         color: isDark ? '#FFFFFF' : '#0B1326', 
-                                        textAlign: 'center',
-                                        marginTop: 18,
                                         fontWeight: '600'
                                     }}
+                                    numberOfLines={1}
                                 >
                                     @{profile.username}
                                 </Text>
 
-                                {/* Center centered bio label styled in Inter-Regular from ReviewCard */}
+                                {/* Row 2: Bio Description with Vertical Padding */}
                                 {profile.bio ? (
                                     <Text 
                                         style={{ 
-                                            color: isDark ? '#A1A1AA' : '#6B7280', 
-                                            fontSize: 13, 
-                                            textAlign: 'center', 
-                                            marginTop: 6, 
-                                            paddingHorizontal: 32,
-                                            lineHeight: 18,
+                                            color: isDark ? '#A1A1AA' : '#4B5563', 
+                                            fontSize: 12.5, 
+                                            paddingVertical: 4,
+                                            lineHeight: 16,
                                             fontFamily: Platform.OS === 'android' ? 'Inter-Regular' : 'Inter',
                                             fontWeight: '400'
                                         }}
@@ -389,77 +398,129 @@ export default function ProfileScreen() {
                                     >
                                         {profile.bio}
                                     </Text>
-                                ) : null}
-                            </View>
-  
-                            {/* Minimalist Stats Columns */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width: '100%', paddingHorizontal: 12, marginTop: 12, marginBottom: 20 }}>
-                                {/* Reviews column */}
-                                <View style={{ alignItems: 'center', flex: 1 }}>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
-                                        {totalReviews}
-                                    </Text>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
-                                        Reviews
-                                    </Text>
-                                </View>
-                                
-                                {/* 5 Stars column */}
-                                <View style={{ alignItems: 'center', flex: 1 }}>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
-                                        {fiveStarCount}
-                                    </Text>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
-                                        5 Stars
-                                    </Text>
-                                </View>
-                                
-                                {/* Places column */}
-                                <View style={{ alignItems: 'center', flex: 1 }}>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
-                                        {uniquePlaces}
-                                    </Text>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
-                                        Places
-                                    </Text>
-                                </View>
+                                ) : (
+                                    <View style={{ height: 4 }} />
+                                )}
 
-                                {/* Chowmates column */}
-                                <TouchableOpacity onPress={openBuddiesList} style={{ alignItems: 'center', flex: 1 }} activeOpacity={0.7}>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'PlayfairDisplay-SemiBold' : 'Playfair Display', fontSize: 32, color: isDark ? '#00D2C4' : '#004D40', fontWeight: 'bold' }}>
-                                        {buddyCount}
-                                    </Text>
-                                    <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontSize: 9.5, color: isDark ? '#FFFFFF' : '#4B5563', fontWeight: 'bold', letterSpacing: 1.2, marginTop: 4, textTransform: 'uppercase' }}>
-                                        Chowmates
-                                    </Text>
-                                </TouchableOpacity>
+                                {/* Row 3: Horizontal Stacked Stats Row */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 24, marginTop: 12 }}>
+                                    {/* Reviews Block */}
+                                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', 
+                                            fontSize: 16, 
+                                            color: isDark ? '#FFFFFF' : '#0B1326', 
+                                            fontWeight: 'bold' 
+                                        }}>
+                                            {totalReviews}
+                                        </Text>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', 
+                                            fontSize: 11, 
+                                            color: isDark ? '#A1A1AA' : '#6B7280', 
+                                            marginTop: 2 
+                                        }}>
+                                            Reviews
+                                        </Text>
+                                    </View>
+                                    
+                                    {/* Places Block */}
+                                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', 
+                                            fontSize: 16, 
+                                            color: isDark ? '#FFFFFF' : '#0B1326', 
+                                            fontWeight: 'bold' 
+                                        }}>
+                                            {uniquePlaces}
+                                        </Text>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', 
+                                            fontSize: 11, 
+                                            color: isDark ? '#A1A1AA' : '#6B7280', 
+                                            marginTop: 2 
+                                        }}>
+                                            Places
+                                        </Text>
+                                    </View>
+
+                                    {/* 5 Stars Block */}
+                                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', 
+                                            fontSize: 16, 
+                                            color: isDark ? '#FFFFFF' : '#0B1326', 
+                                            fontWeight: 'bold' 
+                                        }}>
+                                            {fiveStarCount}
+                                        </Text>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', 
+                                            fontSize: 11, 
+                                            color: isDark ? '#A1A1AA' : '#6B7280', 
+                                            marginTop: 2 
+                                        }}>
+                                            5★
+                                        </Text>
+                                    </View>
+
+                                    {/* Clickable Chowmates Stack Block */}
+                                    <TouchableOpacity 
+                                        onPress={openBuddiesList} 
+                                        style={{ flexDirection: 'column', alignItems: 'center' }} 
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ 
+                                                fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', 
+                                                fontSize: 16, 
+                                                color: '#00D2C4', 
+                                                fontWeight: 'bold' 
+                                            }}>
+                                                {buddyCount}
+                                            </Text>
+                                            <Ionicons name="chevron-forward" size={11} color="#00D2C4" style={{ marginLeft: 2 }} />
+                                        </View>
+                                        <Text style={{ 
+                                            fontFamily: Platform.OS === 'android' ? 'Inter-Medium' : 'Inter', 
+                                            fontSize: 11, 
+                                            color: '#00D2C4', 
+                                            marginTop: 2 
+                                        }}>
+                                            Chowmates
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-  
-                            {/* Centered Sleek Capsule Button */}
-                            <TouchableOpacity 
-                                onPress={() => router.push('/onboarding')}
-                                style={{ 
-                                    width: '55%', 
-                                    height: 42, 
-                                    borderRadius: 21, 
-                                    backgroundColor: isDark ? '#35E8D6' : '#004D40', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'center',
-                                    alignSelf: 'center',
-                                    marginBottom: 16,
-                                    shadowColor: isDark ? '#35E8D6' : '#000',
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: isDark ? 0.2 : 0.1,
-                                    shadowRadius: 6,
-                                    elevation: 4
-                                }}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={{ fontFamily: Platform.OS === 'android' ? 'Inter-Bold' : 'Inter', fontWeight: 'bold', color: isDark ? '#0B1326' : '#FFFFFF', fontSize: 14 }}>
-                                    Edit Profile
-                                </Text>
-                            </TouchableOpacity>
                         </View>
+
+                        {/* Wide/Full-Width Edit Profile Action Button Underneath */}
+                        <TouchableOpacity 
+                            onPress={() => router.push('/onboarding')}
+                            style={{ 
+                                marginHorizontal: 16, 
+                                marginTop: 12, 
+                                marginBottom: 14,
+                                height: 38,
+                                borderRadius: 19, 
+                                borderWidth: 1,
+                                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#D1D5DB',
+                                backgroundColor: 'transparent', 
+                                alignItems: 'center', 
+                                justifyContent: 'center'
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={{ 
+                                fontFamily: Platform.OS === 'android' ? 'Inter-SemiBold' : 'Inter', 
+                                fontWeight: '600', 
+                                color: isDark ? '#E5E5EA' : '#374151', 
+                                fontSize: 13, 
+                                letterSpacing: 0.5 
+                            }}>
+                                Edit Profile
+                            </Text>
+                        </TouchableOpacity>
  
                         {/* Visual Underlined Tab Switcher Row */}
                         <View style={{ borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB', width: '100%', backgroundColor: isDark ? '#0B1326' : '#FFFFFF', marginBottom: 16 }}>
@@ -913,6 +974,6 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 }

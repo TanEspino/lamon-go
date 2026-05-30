@@ -13,9 +13,9 @@ export default function Button({ title, onPress, variant = 'primary', icon }) {
         danger: "bg-red-500 dark:bg-red-600",
     };
     const textStyles = {
-        primary: "text-gray-900 font-extrabold text-lg",
-        secondary: "text-gray-800 dark:text-zinc-100 font-bold text-lg",
-        danger: "text-white font-bold text-lg",
+        primary: "text-gray-900 font-extrabold text-lg text-center",
+        secondary: "text-gray-800 dark:text-zinc-100 font-bold text-lg text-center",
+        danger: "text-white font-bold text-lg text-center",
     };
 
     const getIconColor = () => {

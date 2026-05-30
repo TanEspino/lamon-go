@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, View, Animated, FlatList, Image, Platform, AppState } from 'react-native';
+import { Text, TouchableOpacity, View, Animated, FlatList, Image, Platform, AppState } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useNavigation } from 'expo-router';
 import { useColorScheme } from 'nativewind';
@@ -11,6 +12,8 @@ import { useAlert, CustomAlert } from '../context/AlertContext';
 
 export default function NotificationsScreen({ isTab = false }) {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const topInset = (Platform.OS === 'ios' && !isTab) ? 0 : insets.top;
     const navigation = useNavigation();
     const { user, fetchBuddyStats, clearUnseenAcceptance, unseenRecommendationsCount, clearUnseenRecommendations, showToast, setActiveDiscoverUser } = useAuth();
     const { fetchReviews } = useReviews(); // Used to refetch reviews after accepting a buddy
@@ -568,7 +571,7 @@ export default function NotificationsScreen({ isTab = false }) {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
+        <View style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                 {/* Header */}
                 <View 
@@ -578,7 +581,8 @@ export default function NotificationsScreen({ isTab = false }) {
                         paddingHorizontal: 16,
                         borderBottomWidth: 1,
                         borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
-                        height: 60,
+                        height: 60 + topInset,
+                        paddingTop: topInset,
                         backgroundColor: isDark ? '#0B1326' : '#F3F4F6'
                     }}
                 >
@@ -610,6 +614,6 @@ export default function NotificationsScreen({ isTab = false }) {
                 />
             </Animated.View>
             <CustomAlert />
-        </SafeAreaView>
+        </View>
     );
 }

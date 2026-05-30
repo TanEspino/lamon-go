@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState, useEffect } from 'react';
-import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, useWindowDimensions, RefreshControl, ActivityIndicator, Platform } from 'react-native';
+import { FlatList, Image, Text, TouchableOpacity, View, useWindowDimensions, RefreshControl, ActivityIndicator, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScrollToTop } from '@react-navigation/native';
 import ReviewCard from '../../components/ReviewCard';
 import { useReviews } from '../../context/ReviewsContext';
@@ -11,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 
 export default function FeedScreen() {
     const { reviews, fetchReviews, savedReviewIds, toggleSaveReview } = useReviews();
+    const insets = useSafeAreaInsets();
     const { user, profile, showToast, setActiveDiscoverUser } = useAuth();
     const router = useRouter();
     const { width } = useWindowDimensions();
@@ -250,12 +252,13 @@ export default function FeedScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#F5F5F5' }}>
+        <View className="flex-1 bg-neutral-50 dark:bg-zinc-950" style={{ backgroundColor: isDark ? '#0B1326' : '#F5F5F5' }}>
             {/* Custom Logo Header with Refresh Icon */}
             <View 
                 className="bg-gray-100 dark:bg-[#0B1326]" 
                 style={{ 
-                    height: 60, 
+                    height: 60 + insets.top, 
+                    paddingTop: insets.top,
                     width: '100%', 
                     flexDirection: 'row', 
                     alignItems: 'center', 
@@ -282,10 +285,10 @@ export default function FeedScreen() {
                 </View>
 
                 {/* Left Actions Wrapper - Empty placeholder for consistent centering */}
-                <View style={{ position: 'absolute', left: 16, zIndex: 10 }} />
+                <View style={{ position: 'absolute', left: 16, top: insets.top, bottom: 0, justifyContent: 'center', zIndex: 10 }} />
 
                 {/* Right Actions Wrapper */}
-                <View style={{ position: 'absolute', right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ position: 'absolute', right: 16, top: insets.top, bottom: 0, justifyContent: 'center', zIndex: 10, flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity 
                         onPress={handleManualRefresh}
                         className="p-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-850"
@@ -408,6 +411,6 @@ export default function FeedScreen() {
                     <Ionicons name="arrow-up" size={24} color="black" />
                 </TouchableOpacity>
             )}
-        </SafeAreaView>
+        </View>
     );
 }

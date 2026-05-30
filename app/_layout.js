@@ -11,7 +11,10 @@ import { View, ActivityIndicator, Platform, Text, TouchableOpacity, Animated } f
 import { useEffect, useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   useFonts,
   Inter_400Regular, 
@@ -36,7 +39,7 @@ if (Platform.OS !== 'web') {
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
-      shouldMutateBadge: true,
+      shouldSetBadge: false,
     }),
   });
 }
@@ -48,6 +51,44 @@ import { AlertProvider, CustomAlert } from '../context/AlertContext';
 export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const [themeLoaded, setThemeLoaded] = useState(false);
+
+  useEffect(() => {
+    const getPushToken = async () => {
+      if (Platform.OS === 'web') return;
+      if (!Device.isDevice) {
+        console.log('🎫 [Push Token Setup] Running on simulator/emulator. Attempting token generation anyway...');
+      }
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          console.log('🎫 [Push Token Setup] Failed to get push token: permission was denied.');
+          return;
+        }
+        
+        const projectId =
+          Constants?.expoConfig?.extra?.eas?.projectId ??
+          Constants?.easConfig?.projectId;
+
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+          ...(projectId ? { projectId } : {}),
+        });
+        
+        console.log('\n======================================================');
+        console.log('🎫 EXPO PUSH TOKEN FOR TESTING:');
+        console.log(tokenData.data);
+        console.log('======================================================\n');
+      } catch (err) {
+        console.log('🎫 [Push Token Setup] Error getting Expo Push Token:', err);
+      }
+    };
+
+    getPushToken();
+  }, []);
 
   const [fontsLoaded, fontError] = useFonts({
     'Inter': Inter_400Regular,
@@ -124,6 +165,8 @@ function RootLayoutContent() {
         <Stack.Screen name="qr-code" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="scan-qr" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="notifications" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="account-management" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
       <GlobalToast />
       <CustomAlert />
@@ -135,6 +178,7 @@ function GlobalToast() {
   const { toast, setToast } = useAuth();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(-150)).current;
 
   useEffect(() => {
@@ -160,7 +204,7 @@ function GlobalToast() {
     <Animated.View
       style={{
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 50 : 20,
+        top: insets.top > 0 ? insets.top + 8 : 16,
         left: 16,
         right: 16,
         transform: [{ translateY: slideAnim }],

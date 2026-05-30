@@ -8,6 +8,44 @@ import { supabase } from '../lib/supabase';
 import { useAlert, CustomAlert } from '../context/AlertContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Dictionary of currency symbols for common global currencies
+const CURRENCY_SYMBOLS = {
+    PHP: '₱',
+    USD: '$',
+    JPY: '¥',
+    EUR: '€',
+    GBP: '£',
+    AUD: 'A$',
+    CAD: 'C$',
+    SGD: 'S$',
+    HKD: 'HK$',
+    CNY: '¥',
+    KRW: '₩',
+    INR: '₹',
+    IDR: 'Rp',
+    MYR: 'RM',
+    THB: '฿',
+    VND: '₫',
+    AED: 'د.إ',
+    BRL: 'R$',
+    CHF: 'CHF',
+    MXN: 'Mex$',
+    NZD: 'NZ$',
+    SAR: 'SR',
+    TRY: '₺',
+    TWD: 'NT$',
+    ZAR: 'R'
+};
+
+const formatPriceDisplay = (priceVal, currencyCode) => {
+    const numericPrice = parseFloat(priceVal);
+    if (isNaN(numericPrice)) return '';
+    const formattedPrice = numericPrice.toFixed(2);
+    const code = (currencyCode || 'PHP').toUpperCase();
+    const symbol = CURRENCY_SYMBOLS[code] || code;
+    return `${symbol} ${formattedPrice}`;
+};
+
 // Module-level global flags to avoid spamming table existence checks across multiple card mounts
 let globalDbChecked = false;
 let globalDbAvailable = true;
@@ -563,12 +601,12 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                 </View>
             </View>
 
-            {/* 2. Anchored details and footer interaction block next to continuous vertical teal bar */}
+            {/* 2. Anchored details block next to continuous vertical teal bar */}
             <View style={styles.contentRow}>
                 {/* Continuous Vertical Teal Bar */}
                 <View style={styles.continuousTealBar} />
 
-                {/* Right side text flow: Title, Rating, Location, Price, Body Caption, and Footer Row */}
+                {/* Right side text flow: Title, Rating, Location, Price */}
                 <View style={styles.contentRight}>
                     <View style={styles.titleRow}>
                         <Text style={[styles.dishTitle, textThemeStyle]}>
@@ -606,123 +644,123 @@ export default function ReviewCard({ review, onPress, onDelete, onEdit, onRestau
                             <>
                                 <Text style={[styles.bulletText, subtextThemeStyle, { marginHorizontal: 4 }]}> • </Text>
                                 <Text style={[styles.priceText, priceTextStyle]}>
-                                    {review.currency === 'PHP' || !review.currency ? '₱' : review.currency} {parseFloat(review.price).toFixed(2)}
+                                    {formatPriceDisplay(review.price, review.currency)}
                                 </Text>
                             </>
                         )}
                     </View>
+                </View>
+            </View>
 
-                    {/* Body Text / Caption (Perfect layout next to vertical teal bar) */}
-                    {!!review.notes && (
-                        <View style={styles.bodyContainer}>
-                            <Text 
-                                numberOfLines={isExpanded ? undefined : 2}
-                                style={[styles.bodyText, bodyTextStyle]}
-                            >
-                                {review.notes}
+            {/* Body Text / Caption (Perfect layout outside of vertical teal bar) */}
+            {!!review.notes && (
+                <View style={styles.bodyContainer}>
+                    <Text 
+                        numberOfLines={isExpanded ? undefined : 2}
+                        style={[styles.bodyText, bodyTextStyle]}
+                    >
+                        {review.notes}
+                    </Text>
+                    {review.notes && review.notes.length > 100 && (
+                        <TouchableOpacity 
+                            onPress={() => setIsExpanded(!isExpanded)}
+                            style={styles.readMoreButton}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.readMoreText}>
+                                {isExpanded ? 'SHOW LESS' : 'READ MORE'}
                             </Text>
-                            {review.notes && review.notes.length > 100 && (
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+
+            {/* 3. Footer Interaction Row (Now perfectly aligned outside of the teal bar flow at the bottom) */}
+            <View style={[styles.footer, footerStyle]}>
+                <View style={styles.footerLeft}>
+                    {/* Teal circle Rate Dish Button - Only visible on Home Feed & Not for own reviews */}
+                    {feedType === 'home' && review.user_id !== user?.id && (
+                        <TouchableOpacity 
+                            onPress={openRateDishSheet}
+                            style={[
+                                styles.tealCircleBadge, 
+                                hasUserRated 
+                                    ? { backgroundColor: isDark ? '#061825' : '#E0F7F6' } 
+                                    : { backgroundColor: isDark ? '#31394D' : '#f1f5f9' }
+                            ]}
+                            activeOpacity={0.8}
+                        >
+                            <MaterialCommunityIcons 
+                                name={hasUserRated ? "star-plus" : "star-plus-outline"} 
+                                size={21} 
+                                color={hasUserRated ? "#00D2C4" : (isDark ? "#FFFFFF" : "#71717a")} 
+                            />
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Modern light turquoise Consensus verdicts list button */}
+                    {hasConsensus && (
+                        <TouchableOpacity 
+                            onPress={openConsensusSheet}
+                            style={styles.groupPillBadge} 
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="people" size={13} color="#00D2C4" style={{ marginRight: 3 }} />
+                            <Text style={styles.groupPillText}>{averageRating}</Text>
+                            <Ionicons name="chevron-forward" size={11} color="#00D2C4" style={{ marginLeft: 2 }} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Right-aligned footer actions: Bookmark and relocated Edit/Delete controls */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* bookmark interaction - solid red bookmark banner */}
+                    {onSavePress && (
+                        <TouchableOpacity 
+                            onPress={onSavePress}
+                            style={styles.saveButton}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons 
+                                name={isSaved ? "bookmark" : "bookmark-outline"} 
+                                size={25} 
+                                color={isSaved ? '#E11D48' : (isDark ? '#ffffff' : '#000000')} 
+                            />
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Edit / Delete actions placed next to the bookmark icon with easy tapping layout */}
+                    {(onEdit || onDelete) && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                            {onEdit && (
                                 <TouchableOpacity 
-                                    onPress={() => setIsExpanded(!isExpanded)}
-                                    style={styles.readMoreButton}
+                                    onPress={onEdit} 
+                                    style={{ 
+                                        padding: 8, 
+                                        borderRadius: 20, 
+                                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                                        marginRight: 8
+                                    }}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={styles.readMoreText}>
-                                        {isExpanded ? 'SHOW LESS' : 'READ MORE'}
-                                    </Text>
+                                    <Ionicons name="create-outline" size={18} color={isDark ? '#FFFFFF' : '#1C1C1E'} />
+                                </TouchableOpacity>
+                            )}
+                            {onDelete && (
+                                <TouchableOpacity 
+                                    onPress={onDelete} 
+                                    style={{ 
+                                        padding: 8, 
+                                        borderRadius: 20, 
+                                        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)'
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
                                 </TouchableOpacity>
                             )}
                         </View>
                     )}
-
-                    {/* 3. Footer Interaction Row (Now perfectly aligned inside the teal bar flow at the bottom) */}
-                    <View style={[styles.footer, footerStyle]}>
-                        <View style={styles.footerLeft}>
-                            {/* Teal circle Rate Dish Button - Only visible on Home Feed & Not for own reviews */}
-                            {feedType === 'home' && review.user_id !== user?.id && (
-                                <TouchableOpacity 
-                                    onPress={openRateDishSheet}
-                                    style={[
-                                        styles.tealCircleBadge, 
-                                        hasUserRated 
-                                            ? { backgroundColor: isDark ? '#061825' : '#E0F7F6' } 
-                                            : { backgroundColor: isDark ? '#31394D' : '#f1f5f9' }
-                                    ]}
-                                    activeOpacity={0.8}
-                                >
-                                    <MaterialCommunityIcons 
-                                        name={hasUserRated ? "star-plus" : "star-plus-outline"} 
-                                        size={21} 
-                                        color={hasUserRated ? "#00D2C4" : (isDark ? "#FFFFFF" : "#71717a")} 
-                                    />
-                                </TouchableOpacity>
-                            )}
-
-                            {/* Modern light turquoise Consensus verdicts list button */}
-                            {hasConsensus && (
-                                <TouchableOpacity 
-                                    onPress={openConsensusSheet}
-                                    style={styles.groupPillBadge} 
-                                    activeOpacity={0.8}
-                                >
-                                    <Ionicons name="people" size={13} color="#00D2C4" style={{ marginRight: 3 }} />
-                                    <Text style={styles.groupPillText}>{averageRating}</Text>
-                                    <Ionicons name="chevron-forward" size={11} color="#00D2C4" style={{ marginLeft: 2 }} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-
-                        {/* Right-aligned footer actions: Bookmark and relocated Edit/Delete controls */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            {/* bookmark interaction - solid red bookmark banner */}
-                            {onSavePress && (
-                                <TouchableOpacity 
-                                    onPress={onSavePress}
-                                    style={styles.saveButton}
-                                    activeOpacity={0.7}
-                                >
-                                    <Ionicons 
-                                        name={isSaved ? "bookmark" : "bookmark-outline"} 
-                                        size={25} 
-                                        color={isSaved ? '#E11D48' : (isDark ? '#ffffff' : '#000000')} 
-                                    />
-                                </TouchableOpacity>
-                            )}
-
-                            {/* Edit / Delete actions placed next to the bookmark icon with easy tapping layout */}
-                            {(onEdit || onDelete) && (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-                                    {onEdit && (
-                                        <TouchableOpacity 
-                                            onPress={onEdit} 
-                                            style={{ 
-                                                padding: 8, 
-                                                borderRadius: 20, 
-                                                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-                                                marginRight: 8
-                                            }}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Ionicons name="create-outline" size={18} color={isDark ? '#FFFFFF' : '#1C1C1E'} />
-                                        </TouchableOpacity>
-                                    )}
-                                    {onDelete && (
-                                        <TouchableOpacity 
-                                            onPress={onDelete} 
-                                            style={{ 
-                                                padding: 8, 
-                                                borderRadius: 20, 
-                                                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)'
-                                            }}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            )}
-                        </View>
-                    </View>
                 </View>
             </View>
 
@@ -1284,7 +1322,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 16, // Beautiful spacing inside card borders
         paddingTop: 16,
-        paddingBottom: 8,
+        paddingBottom: 4,
     },
     continuousTealBar: {
         width: 4,
@@ -1391,6 +1429,8 @@ const styles = StyleSheet.create({
     },
     bodyContainer: {
         marginTop: 8,
+        paddingLeft: 32,
+        paddingRight: 16,
     },
     bodyText: {
         fontSize: 15,
@@ -1419,9 +1459,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 0, // Align perfectly with the text above
+        paddingLeft: 32, // Align perfectly with the text above
+        paddingRight: 16,
         paddingTop: 12,      // Beautiful spacing from description caption
-        paddingBottom: 8,
+        paddingBottom: 16,
     },
     footerLight: {
         // completely remove grey border for continuous whitespace flow

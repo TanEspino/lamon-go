@@ -10,8 +10,7 @@ export async function registerForPushNotificationsAsync() {
     }
 
     if (!Device.isDevice) {
-        console.log('Must use a physical device for Push Notifications. Simulators will not receive push tokens.');
-        return null;
+        console.log('🎫 Running on simulator/emulator. Attempting token generation anyway...');
     }
 
     try {

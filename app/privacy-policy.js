@@ -1,11 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View, Linking, Animated } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, Linking, Animated, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 
 export default function PrivacyPolicyScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? 0 : insets.top;
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
 
@@ -52,7 +55,7 @@ export default function PrivacyPolicyScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
+        <View style={{ flex: 1, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <Animated.View 
                 style={{ 
                     flex: 1, 
@@ -64,7 +67,8 @@ export default function PrivacyPolicyScreen() {
                 <View 
                     className="flex-row items-center px-4" 
                     style={{ 
-                        height: 60,
+                        height: 60 + topInset,
+                        paddingTop: topInset,
                         backgroundColor: isDark ? '#0B1326' : '#F3F4F6',
                         borderBottomWidth: 1,
                         borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
@@ -261,6 +265,6 @@ export default function PrivacyPolicyScreen() {
                     </View>
                 </ScrollView>
             </Animated.View>
-        </SafeAreaView>
+        </View>
     );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, View, StyleSheet, Animated, Image, Platform, ActivityIndicator } from 'react-native';
+import { Text, TouchableOpacity, View, StyleSheet, Animated, Image, Platform, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, CameraView } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,6 +12,8 @@ import { useAlert, CustomAlert } from '../context/AlertContext';
 
 export default function ScanQRScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const topInset = Platform.OS === 'ios' ? 0 : insets.top;
     const { user, fetchBuddyStats, showToast } = useAuth();
     const { showAlert } = useAlert();
 
@@ -332,10 +335,10 @@ export default function ScanQRScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+        <View className="flex-1" style={{ backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
             <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
                 {/* Header */}
-                <View className="flex-row items-center px-4 bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800" style={{ height: 60 }}>
+                <View style={{ height: 60 + topInset, paddingTop: topInset, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, backgroundColor: isDark ? '#0B1326' : '#F9FAFB', borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB' }}>
                     <TouchableOpacity onPress={handleClose} className="p-2 -ml-2 rounded-full active:bg-gray-200 dark:active:bg-zinc-800">
                         <Ionicons name="close" size={26} color={isDark ? '#F4F4F5' : '#18181B'} />
                     </TouchableOpacity>
@@ -345,12 +348,12 @@ export default function ScanQRScreen() {
                 {/* Content */}
                 <View className="flex-1 bg-black relative">
                     {hasPermission === null ? (
-                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#09090B' : '#FFFFFF' }}>
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
                             <ActivityIndicator size="large" color="#40E0D0" />
                             <Text style={{ color: isDark ? '#A1A1AA' : '#6B7280', fontWeight: '500', marginTop: 12 }}>Checking camera status...</Text>
                         </View>
                     ) : hasPermission === 'prompt' ? (
-                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: isDark ? '#09090B' : '#FFFFFF' }}>
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
                             <Ionicons name="camera-outline" size={64} color="#40E0D0" style={{ marginBottom: 20 }} />
                             <Text style={{ fontSize: 20, fontWeight: '900', color: isDark ? '#FFFFFF' : '#111827', textAlign: 'center', marginBottom: 8 }}>Camera Access Required</Text>
                             <Text style={{ fontSize: 14, color: isDark ? '#A1A1AA' : '#6B7280', textAlign: 'center', marginBottom: 32, paddingHorizontal: 20, lineHeight: 22 }}>
@@ -400,7 +403,7 @@ export default function ScanQRScreen() {
                             </TouchableOpacity>
                         </View>
                     ) : hasPermission === false ? (
-                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: isDark ? '#09090B' : '#FFFFFF' }}>
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: isDark ? '#0B1326' : '#FFFFFF' }}>
                             <Ionicons name="videocam-off-outline" size={56} color={isDark ? '#A3A3A3' : '#6B7280'} style={{ marginBottom: 16 }} />
                             <Text style={{ fontSize: 18, fontWeight: '800', color: isDark ? '#FFFFFF' : '#111827', textAlign: 'center', marginBottom: 8 }}>Camera Unavailable</Text>
                             <Text style={{ fontSize: 14, color: isDark ? '#A1A1AA' : '#6B7280', textAlign: 'center', marginBottom: 24, paddingHorizontal: 16, lineHeight: 20 }}>
@@ -475,12 +478,31 @@ export default function ScanQRScreen() {
 
                     {/* Scanned Profile Modal */}
                     {scannedProfile && (
-                        <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 rounded-t-3xl p-6 shadow-xl border-t border-gray-200 dark:border-zinc-800">
+                        <View 
+                            style={{ 
+                                position: 'absolute', 
+                                bottom: 0, 
+                                left: 0, 
+                                right: 0, 
+                                backgroundColor: isDark ? '#0B1326' : '#FFFFFF', 
+                                borderTopLeftRadius: 24, 
+                                borderTopRightRadius: 24, 
+                                padding: 24, 
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: -6 },
+                                shadowOpacity: 0.15,
+                                shadowRadius: 10,
+                                elevation: 5,
+                                borderTopWidth: 1,
+                                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
+                            }}
+                        >
                             <View className="items-center relative w-full pt-4">
                                 {/* Close Button in Top Right of scanned profile card */}
                                 <TouchableOpacity 
                                     onPress={() => { setScannedProfile(null); setScanned(false); setConnectionStatus(null); setCardFeedback(null); }}
-                                    className="absolute -top-1 -right-1 p-2 rounded-full bg-gray-100 dark:bg-zinc-800"
+                                    className="absolute -top-1 -right-1 p-2 rounded-full"
+                                    style={{ backgroundColor: isDark ? '#151C2E' : '#F3F4F6' }}
                                     activeOpacity={0.8}
                                 >
                                     <Ionicons name="close" size={20} color={isDark ? '#F4F4F5' : '#18181B'} />
@@ -497,7 +519,8 @@ export default function ScanQRScreen() {
                                 <View className="flex-row w-full space-x-3">
                                     <TouchableOpacity
                                         onPress={() => { setScannedProfile(null); setScanned(false); setConnectionStatus(null); setCardFeedback(null); }}
-                                        className="flex-1 bg-gray-100 dark:bg-zinc-800 py-3 rounded-xl items-center mr-2"
+                                        className="flex-1 py-3 rounded-xl items-center mr-2"
+                                        style={{ backgroundColor: isDark ? '#151C2E' : '#F3F4F6' }}
                                     >
                                         <Text className="font-bold text-gray-900 dark:text-white">
                                             {connectionStatus ? "Scan Again" : "Cancel"}
@@ -558,7 +581,14 @@ export default function ScanQRScreen() {
 
                                 {/* Beautiful Inline Card Feedback */}
                                 {cardFeedback && (
-                                    <View className="flex-row items-center mt-4 bg-gray-50 dark:bg-zinc-800/30 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-zinc-800 w-full justify-center">
+                                    <View 
+                                        className="flex-row items-center mt-4 px-3 py-2.5 rounded-xl w-full justify-center"
+                                        style={{ 
+                                            backgroundColor: isDark ? '#09111E' : '#F9FAFB', 
+                                            borderWidth: 1, 
+                                            borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB' 
+                                        }}
+                                    >
                                         <Ionicons 
                                             name={cardFeedback.includes("successfully") ? "checkmark-circle" : "information-circle"} 
                                             size={16} 
@@ -583,6 +613,6 @@ export default function ScanQRScreen() {
                 </View>
             </Animated.View>
             <CustomAlert />
-        </SafeAreaView>
+        </View>
     );
 }
